@@ -50,7 +50,7 @@
     "remote": "github-personal/rdegraci/ultra-trace"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-09-17T19:03:09-04:00",
@@ -690,7 +690,7 @@
       "summary": "Async suspension points now affect risk scoring conservatively: facts proven before an `await` or task creation are no longer treated as certain afterward, preventing unsupported High-severity findings. Findings record the relevant async path evidence while purely sequential cases retain their existing severity and confidence."
     }
   ],
-  "updated_at": "2026-09-29T18:14:25.188368+00:00",
+  "updated_at": "2026-09-29T18:48:29.682506+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

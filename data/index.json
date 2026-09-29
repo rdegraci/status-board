@@ -6,8 +6,8 @@
       "branch": "main",
       "id": "Desktopper",
       "name": "Desktopper",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:16:59.171462+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:47:38.572980+00:00",
       "working_tree_clean": true
     },
     {
@@ -26,8 +26,8 @@
       "branch": "main",
       "id": "greenfield",
       "name": "greenfield",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:25:40.435497+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:47:51.047818+00:00",
       "working_tree_clean": true
     },
     {
@@ -36,8 +36,8 @@
       "branch": "main",
       "id": "llm-platform",
       "name": "llm-platform",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:26:57.615089+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:47:57.633293+00:00",
       "working_tree_clean": true
     },
     {
@@ -46,8 +46,8 @@
       "branch": "main",
       "id": "lorebuilder-cli",
       "name": "lorebuilder-cli",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:21:06.235572+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:02.296578+00:00",
       "working_tree_clean": true
     },
     {
@@ -56,8 +56,8 @@
       "branch": "main",
       "id": "maximus",
       "name": "maximus",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:28:31.971500+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:07.745275+00:00",
       "working_tree_clean": true
     },
     {
@@ -66,8 +66,8 @@
       "branch": "main",
       "id": "monitor",
       "name": "monitor",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T17:26:36.825492+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:17.067012+00:00",
       "working_tree_clean": true
     },
     {
@@ -76,8 +76,8 @@
       "branch": "main",
       "id": "super-duper",
       "name": "super-duper",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:17:39.699133+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:23.481121+00:00",
       "working_tree_clean": true
     },
     {
@@ -86,8 +86,8 @@
       "branch": "main",
       "id": "ultra-trace",
       "name": "ultra-trace",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:14:25.188368+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:29.682506+00:00",
       "working_tree_clean": true
     },
     {
@@ -96,11 +96,11 @@
       "branch": "dev",
       "id": "world-sim",
       "name": "world-sim",
-      "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:16:49.925551+00:00",
+      "source": "MBPxxx4GB.local",
+      "updated_at": "2026-09-29T18:48:43.894695+00:00",
       "working_tree_clean": true
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:28:31.971500+00:00"
+  "updated_at": "2026-09-29T18:48:43.894695+00:00"
 }

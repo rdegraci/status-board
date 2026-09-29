@@ -52,7 +52,7 @@
     "remote": "github-personal/rdegraci/greenfield"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-09-09T21:53:48-04:00",
@@ -429,7 +429,7 @@
       "summary": "Retryable verification failures now trigger a focused repair attempt that gives code generation the latest failure details and guidance. Each repair attempt is recorded with its verification report, attempt number, and repair context for inspection."
     }
   ],
-  "updated_at": "2026-09-29T18:25:40.435497+00:00",
+  "updated_at": "2026-09-29T18:47:51.047818+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

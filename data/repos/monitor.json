@@ -45,7 +45,7 @@
     "remote": "github-personal/rdegraci/monitor"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-09-27T18:12:19-04:00",
@@ -323,7 +323,7 @@
       "summary": "Reasoning-effort auto-bumps now use Jev as a backstop to validate heuristic triggers and identify some ambiguous mid-length requests that heuristics miss. If Jev is unavailable, existing heuristic behavior is preserved."
     }
   ],
-  "updated_at": "2026-09-29T17:26:36.825492+00:00",
+  "updated_at": "2026-09-29T18:48:17.067012+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

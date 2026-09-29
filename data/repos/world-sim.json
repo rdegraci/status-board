@@ -19,7 +19,7 @@
     "remote": "github-personal/rdegraci/world-sim"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-08-23T01:07:09-04:00",
@@ -397,7 +397,7 @@
       "summary": "Adds comprehensive documentation for operating World-Sim, using its commands and hosting the web-based co-op interface. It also provides a step-by-step tutorial for authoring and playtesting a new world wing, with links from the main README and a central documentation index."
     }
   ],
-  "updated_at": "2026-09-29T18:16:49.925551+00:00",
+  "updated_at": "2026-09-29T18:48:43.894695+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

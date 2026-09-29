@@ -51,7 +51,7 @@
     "remote": "github-personal/rdegraci/super-duper"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-09-05T15:51:04-04:00",
@@ -498,7 +498,7 @@
       "summary": "Product planning now detects existing source files and can favor extending them instead of rebuilding from scratch. Users can control this behavior with automatic, forced extend, or greenfield modes, while plans are adjusted to reuse existing files and avoid redundant skeleton work."
     }
   ],
-  "updated_at": "2026-09-29T18:17:39.699133+00:00",
+  "updated_at": "2026-09-29T18:48:23.481121+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

@@ -47,7 +47,7 @@
     "remote": "github-personal/rdegraci/lorebuilder-cli"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-08-23T22:49:16-04:00",
@@ -507,7 +507,7 @@
       "summary": "Adds an automated test workflow for pushes and pull requests targeting the main or dev branches. It runs the test suite on Ubuntu with Python 3.12, installs project dependencies, and reports test coverage."
     }
   ],
-  "updated_at": "2026-09-29T18:21:06.235572+00:00",
+  "updated_at": "2026-09-29T18:48:02.296578+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

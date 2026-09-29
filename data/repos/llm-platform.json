@@ -49,7 +49,7 @@
     "remote": "github-personal/rdegraci/llm-platform"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-08-11T19:04:10-04:00",
@@ -87,7 +87,7 @@
       "summary": "Expanded the project documentation with a clearer overview, improved navigation, and more consistent descriptions of installation, configuration, runtime behavior, plugins, and project status. Added project badges and a dedicated license section to make key information easier to find."
     }
   ],
-  "updated_at": "2026-09-29T18:26:57.615089+00:00",
+  "updated_at": "2026-09-29T18:47:57.633293+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

@@ -52,7 +52,7 @@
     "remote": "github-personal/rdegraci/maximus"
   },
   "schema_version": 1,
-  "source": "MBP-64GB.local",
+  "source": "MBPxxx4GB.local",
   "spine": [
     {
       "authored_at": "2026-09-17T23:11:07-04:00",
@@ -336,7 +336,7 @@
       "summary": "Adds a reusable competition starter template with train, evaluation, and submission stubs, plus a runnable toy binary-classification competition. The toy competition generates synthetic data, trains a configurable classifier, evaluates ROC-AUC on a held-out split, and writes model, metric, and submission artifacts without requiring GPUs or contest access."
     }
   ],
-  "updated_at": "2026-09-29T18:28:31.971500+00:00",
+  "updated_at": "2026-09-29T18:48:07.745275+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],
