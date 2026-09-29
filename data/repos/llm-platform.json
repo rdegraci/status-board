@@ -5,11 +5,41 @@
   "branch": "main",
   "commit_count": 1,
   "files_touched_total": 1,
-  "future_steps": [],
+  "future_steps": [
+    {
+      "text": "Add a runnable example application with a small custom plugin and completion provider, exercising the documented configuration and transport paths end to end."
+    },
+    {
+      "text": "Add integration coverage for malformed model tool calls, unknown tools, schema-invalid arguments, tool failures, timeouts, and cancellation so the runtime’s failure behavior is explicit."
+    },
+    {
+      "text": "Define and enforce a stable public API boundary, including compatibility expectations for plugin interfaces, configuration fields, runtime events, and transport adapters."
+    },
+    {
+      "text": "Add session persistence and resume support so conversations and tool state can survive process restarts rather than remaining memory-scoped."
+    },
+    {
+      "text": "Introduce bounded resource controls for plugin execution, including concurrency limits, output-size limits, and protection against runaway tool-call loops."
+    },
+    {
+      "text": "Add release automation that builds the package, validates the published artifact from a clean environment, and checks the README’s installation example against the released interface."
+    }
+  ],
   "head_sha": "83fdb2c10e1915dfc7d1d6670a9dd4d7021be42d",
   "head_story": {
-    "features": [],
-    "text": ""
+    "features": [
+      "Run a model-driven tool-calling loop with custom completion providers",
+      "Load plugins that define tools, schemas, and optional prompt sections",
+      "Configure the runtime with validated YAML settings",
+      "Enable session-scoped time and todo tools",
+      "Set completion and tool timeouts",
+      "Observe structured runtime events or log them directly",
+      "Allow or deny specific tools",
+      "Compact conversations with a sliding window",
+      "Use experimental OpenAI Responses transport",
+      "Reuse the same solver across multiple applications"
+    ],
+    "text": "The README now presents the package as a reusable, capability-agnostic tool-calling runtime for applications that provide their own plugins and product experience. It clearly documents installation, configuration, plugin composition, operational settings, sample usage, supported transports, and current project status."
   },
   "range_label": "99d453e..83fdb2c",
   "repo": {
@@ -43,15 +73,21 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "README overview and onboarding guidance",
+        "Improved installation and configuration documentation",
+        "Clearer explanation of the solver loop, plugins, timeouts, and events",
+        "Expanded navigation with overview and license sections",
+        "Added version, Python, and license badges"
+      ],
       "is_head": true,
       "sha": "83fdb2c10e1915dfc7d1d6670a9dd4d7021be42d",
       "short_sha": "83fdb2c",
       "subject": "Document llm-platform README",
-      "summary": ""
+      "summary": "Expanded the project documentation with a clearer overview, improved navigation, and more consistent descriptions of installation, configuration, runtime behavior, plugins, and project status. Added project badges and a dedicated license section to make key information easier to find."
     }
   ],
-  "updated_at": "2026-09-29T18:17:57.701231+00:00",
+  "updated_at": "2026-09-29T18:26:57.615089+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],
