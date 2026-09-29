@@ -22,6 +22,26 @@
     },
     {
       "ahead_count": 6,
+      "base_ref": "last-pushed → 94a5efe (local HEAD~6; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "greenfield",
+      "name": "greenfield",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:17:30.128069+00:00",
+      "working_tree_clean": true
+    },
+    {
+      "ahead_count": 1,
+      "base_ref": "last-pushed → 99d453e (local HEAD~1; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "llm-platform",
+      "name": "llm-platform",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:17:57.701231+00:00",
+      "working_tree_clean": true
+    },
+    {
+      "ahead_count": 6,
       "base_ref": "last-pushed → e342c7d (local HEAD~6; fully pushed (origin/main))",
       "branch": "main",
       "id": "lorebuilder-cli",
@@ -31,6 +51,16 @@
       "working_tree_clean": false
     },
     {
+      "ahead_count": 3,
+      "base_ref": "last-pushed → a04e909 (local HEAD~3; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "maximus",
+      "name": "maximus",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:17:15.939210+00:00",
+      "working_tree_clean": true
+    },
+    {
       "ahead_count": 17,
       "base_ref": "last-pushed → d53d58d (origin/main)",
       "branch": "main",
@@ -38,6 +68,16 @@
       "name": "monitor",
       "source": "MBP-64GB.local",
       "updated_at": "2026-09-29T17:26:36.825492+00:00",
+      "working_tree_clean": true
+    },
+    {
+      "ahead_count": 6,
+      "base_ref": "last-pushed → 7bd1117 (local HEAD~6; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "super-duper",
+      "name": "super-duper",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:17:39.699133+00:00",
       "working_tree_clean": true
     },
     {
@@ -62,5 +102,5 @@
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:16:59.171462+00:00"
+  "updated_at": "2026-09-29T18:17:57.701231+00:00"
 }

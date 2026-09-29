@@ -1,0 +1,62 @@
+{
+  "ahead_count": 1,
+  "base_ref": "last-pushed → 99d453e (local HEAD~1; fully pushed (origin/main))",
+  "base_sha": "99d453e85c1b2cf86918188fb0bb08fc361032e7",
+  "branch": "main",
+  "commit_count": 1,
+  "files_touched_total": 1,
+  "future_steps": [],
+  "head_sha": "83fdb2c10e1915dfc7d1d6670a9dd4d7021be42d",
+  "head_story": {
+    "features": [],
+    "text": ""
+  },
+  "range_label": "99d453e..83fdb2c",
+  "repo": {
+    "id": "llm-platform",
+    "name": "llm-platform",
+    "path": "/Users/rdegraci/Hack/llm-platform",
+    "remote": "github-personal/rdegraci/llm-platform"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [
+    {
+      "authored_at": "2026-08-11T19:04:10-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Refresh the README to present the project as a reusable\nLLM tool-calling runtime and make the top-level docs easier\nto scan.\n\nThe update adds a clearer overview, standardizes section\nnames and tables, and tightens feature and configuration\ndescriptions. It also improves the sample layout and status\nnotes so readers can understand the project scope and setup\nmore quickly.\n",
+        "patch": "diff --git a/README.md b/README.md\nindex c982418..baec217 100644\n--- a/README.md\n+++ b/README.md\n@@ -1,16 +1,21 @@\n # llm-platform\n \n-**Capability-agnostic LLM tool-calling runtime with a plugin host.**\n+> Capability-agnostic LLM tool-calling runtime with a plugin host.\n \n-Version **0.2.0**. Generic solver loop for apps that plug in tools (Slack, Jira, calc, and similar). The package owns completion, session, compaction, and plugin composition. Apps own capabilities and product UI.\n+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](#)\n+[![Python](https://img.shields.io/badge/python-3.10%2B-3776AB.svg)](#requirements)\n+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)\n+\n+`llm-platform` is a generic solver loop for apps that plug in tools like Slack, Jira, calc, and similar integrations. The package owns completion, session, compaction, and plugin composition. Apps own capabilities and product UI.\n \n > Extracted from the host layer of `slack-search`.\n \n ## Table of contents\n \n+- [Overview](#overview)\n - [Features](#features)\n - [Requirements](#requirements)\n-- [Install](#install)\n+- [Installation](#installation)\n - [Quick start](#quick-start)\n - [How it works](#how-it-works)\n - [Configuration](#configuration)\n@@ -20,27 +25,32 @@ Version **0.2.0**. Generic solver loop for apps that plug in tools (Slack, Jira,\n - [Development](#development)\n - [Status](#status)\n - [Documentation](#documentation)\n+- [License](#license)\n+\n+## Overview\n+\n+Use `llm-platform` when you want a reusable model-driven tool loop without hardcoding domain logic into the host. Define capabilities as plugins, load them per app, and reuse the same runtime across multiple products.\n \n ## Features\n \n - Tool-calling loop with injected `completion_fn` (default: LiteLLM Completions)\n-- Plugin host: schemas, callables, optional prompt sections\n+- Plugin host for schemas, callables, and optional prompt sections\n - YAML config with validation (`validate_config`)\n - Opt-in builtins: `time`, `todo` (session-scoped)\n - Timeouts for completions and tools\n - Structured events (`on_event` or `log_events`)\n-- Tool allow / deny lists\n+- Tool allow and deny lists\n - Sliding-window conversation compaction\n - Experimental OpenAI Responses transport (`api.kind: responses`)\n \n ## Requirements\n \n - Python 3.10+\n-- A model API key (for example `OPENAI_API_KEY` or `LITELLM_API_KEY`)\n+- A model API key, such as `OPENAI_API_KEY` or `LITELLM_API_KEY`\n \n-## Install\n+## Installation\n \n-Local editable install (recommended while developing):\n+Local editable install while developing:\n \n ```bash\n pip install -e /path/to/llm-platform\n@@ -76,14 +86,14 @@ api:\n \n ## How it works\n \n-`llm-platform` is a **generic solver**. It sends the system prompt, tool schemas, and session messages to the model. If the model returns tool calls, the host runs them and continues until a normal answer (or the depth limit).\n+`llm-platform` sends the system prompt, tool schemas, and session messages to the model. If the model returns tool calls, the host runs them and continues until a normal answer or the depth limit.\n \n The host does not choose tools in code. The model chooses tools from schemas and the prompt.\n \n | Piece | Role |\n-|-------|------|\n+| --- | --- |\n | **Host** | Prompt assembly, model call, tool execution, session, compaction, limits |\n-| **Plugin** | One problem class: tools + optional prompt section |\n+| **Plugin** | One problem class: tools plus optional prompt section |\n | **App** | Which plugins to load, plus config |\n \n Write a plugin per domain. Load one or more plugins in an app. Reuse the same solver across apps.\n@@ -91,7 +101,7 @@ Write a plugin per domain. Load one or more plugins in an app. Reuse the same so\n ## Configuration\n \n | Key | Default | Description |\n-|-----|---------|-------------|\n+| --- | --- | --- |\n | `model` | `openai/gpt-4.1-2025-04-14` | LiteLLM model id |\n | `plugins` | `[]` | Plugin names and/or `{name, import}` mappings |\n | `max_tool_call_depth` | `3` | Max tool rounds per user turn |\n@@ -103,7 +113,7 @@ Write a plugin per domain. Load one or more plugins in an app. Reuse the same so\n | `tools.allow` | `null` | Tool name allowlist (`null` = all) |\n | `tools.deny` | `[]` | Tool names to remove after load |\n \n-Example with ops knobs:\n+Example with operational settings:\n \n ```yaml\n model: openai/gpt-4.1-2025-04-14\n@@ -128,7 +138,7 @@ tools:\n \n **Events:** pass `on_event(event, payload)` to `build_runtime`, or set `log_events: true`. Event names include `turn.start`, `turn.end`, `completion.start`, `completion.end`, `tool.call`, `tool.result`, and `error`.\n \n-**Timeouts:** use a worker thread. On timeout, completion raises; a tool returns an error string and the loop continues. The worker may still finish in the background.\n+**Timeouts:** the runtime uses a worker thread. On timeout, completion raises; a tool returns an error string and the loop continues. The worker may still finish in the background.\n \n ## Plugins\n \n@@ -152,11 +162,11 @@ plugins:\n ### Builtins (opt-in)\n \n | Name | Tools | Notes |\n-|------|-------|-------|\n+| --- | --- | --- |\n | `time` | `get_current_time` | ISO-8601 + IANA timezone |\n | `todo` | `todo_add`, `todo_list`, `todo_complete`, `todo_clear` | Session-scoped only |\n \n-Off by default. Domain APIs (Slack, Jira, …) stay in the app, not in builtins.\n+Off by default. Domain APIs like Slack and Jira stay in the app, not in builtins.\n \n ### Experimental: Responses API\n \n@@ -170,7 +180,7 @@ Maps Completions-shaped sessions through `litellm.responses`. Function tools onl\n ## Sample apps\n \n | Path | Description |\n-|------|-------------|\n+| --- | --- |\n | [`sample_apps/simple/`](sample_apps/simple/) | Math Q&A, no plugins |\n | [`sample_apps/complex/`](sample_apps/complex/) | App-local `calculate` plugin |\n \n@@ -184,7 +194,7 @@ python main.py\n \n ## Project layout\n \n-```\n+```text\n llm-platform/\n ├── src/llm_platform/\n │   ├── runtime.py           # Tool loop, session, timeouts, events\n@@ -213,7 +223,7 @@ pytest\n Suitable for local multi-project use via editable install. Not a multi-tenant production platform.\n \n | Surface | Status |\n-|---------|--------|\n+| --- | --- |\n | Completions transport | Supported |\n | Plugin host + tool loop | Supported |\n | Builtins `time` / `todo` | Supported (opt-in) |\n@@ -225,7 +235,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes.\n ## Documentation\n \n | Doc | Description |\n-|-----|-------------|\n+| --- | --- |\n | [HOWTO.md](HOWTO.md) | Step-by-step math app from scratch |\n | [CHANGELOG.md](CHANGELOG.md) | Version history and stability notes |\n | [sample_apps/simple/](sample_apps/simple/) | Minimal runnable sample |\n",
+        "stats": {
+          "deletions": 20,
+          "files": [
+            {
+              "additions": 30,
+              "deletions": 20,
+              "path": "README.md",
+              "status": "M"
+            }
+          ],
+          "files_changed": 1,
+          "insertions": 30
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": true,
+      "sha": "83fdb2c10e1915dfc7d1d6670a9dd4d7021be42d",
+      "short_sha": "83fdb2c",
+      "subject": "Document llm-platform README",
+      "summary": ""
+    }
+  ],
+  "updated_at": "2026-09-29T18:17:57.701231+00:00",
+  "working_tree": {
+    "clean": true,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": []
+  }
+}

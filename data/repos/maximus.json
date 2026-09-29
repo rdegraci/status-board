@@ -1,0 +1,294 @@
+{
+  "ahead_count": 3,
+  "base_ref": "last-pushed → a04e909 (local HEAD~3; fully pushed (origin/main))",
+  "base_sha": "a04e9096b6241d03b435db1a2c8381fa4319ad78",
+  "branch": "main",
+  "commit_count": 3,
+  "files_touched_total": 27,
+  "future_steps": [],
+  "head_sha": "3885f6593a6aa86220793e240f95ecb9ee7a0269",
+  "head_story": {
+    "features": [],
+    "text": ""
+  },
+  "range_label": "a04e909..3885f65",
+  "repo": {
+    "id": "maximus",
+    "name": "maximus",
+    "path": "/Users/rdegraci/Hack/maximus",
+    "remote": "github-personal/rdegraci/maximus"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [
+    {
+      "authored_at": "2026-09-17T23:11:07-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Add the MIT license file and update the README to reflect the\nrepository's licensing status.\n",
+        "patch": "diff --git a/LICENSE b/LICENSE\nnew file mode 100644\nindex 0000000..5785900\n--- /dev/null\n+++ b/LICENSE\n@@ -0,0 +1,8 @@\n+Copyright 2026 Rodney Degracia\n+\n+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n+\n+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n+\n+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n+\ndiff --git a/README.md b/README.md\nindex 15ccd5a..4416553 100644\n--- a/README.md\n+++ b/README.md\n@@ -87,4 +87,4 @@ maximus/\n \n ## License\n \n-No license file in this repo yet.\n+MIT — see [LICENSE](LICENSE). Copyright 2026 Rodney Degracia.\n",
+        "stats": {
+          "deletions": 1,
+          "files": [
+            {
+              "additions": 8,
+              "deletions": 0,
+              "path": "LICENSE",
+              "status": "A"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "README.md",
+              "status": "M"
+            }
+          ],
+          "files_changed": 2,
+          "insertions": 9
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": true,
+      "sha": "3885f6593a6aa86220793e240f95ecb9ee7a0269",
+      "short_sha": "3885f65",
+      "subject": "Add MIT License",
+      "summary": ""
+    },
+    {
+      "authored_at": "2026-09-17T22:56:08-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Add a GitHub-style README plus Quick Start and Operator\nGuide so install, CLI/MCP usage, and the train gate are\neasy to follow.\n\nIgnore competition runtime artifacts and experiment logs\nso local train/eval outputs stay out of version control.\n",
+        "patch": "diff --git a/.cursor/skills/maximus-ml-engineer/SKILL.md b/.cursor/skills/maximus-ml-engineer/SKILL.md\nnew file mode 100644\nindex 0000000..815695a\n--- /dev/null\n+++ b/.cursor/skills/maximus-ml-engineer/SKILL.md\n@@ -0,0 +1,37 @@\n+---\n+name: maximus-ml-engineer\n+description: >-\n+  Operates the Maximus competition harness as an ML engineer agent. Use when\n+  working in the Maximus repo, improving competition models, running toy_binary,\n+  using maximus CLI/MCP tools, request_train, experiment logs, or gated training\n+  workflows.\n+---\n+\n+# Maximus ML Engineer\n+\n+## Role\n+\n+You automate grunt work around ML competition experiments. The human owns compute.\n+\n+## Hard rules\n+\n+1. Prefer Maximus MCP tools over asking the user to paste logs or metrics.\n+2. Make **one** substantive change per improve cycle.\n+3. Edit only paths matching the competition `allowed_edit_globs`.\n+4. Never start training via tools. Call `request_train`, then **stop**.\n+5. After the human runs `maximus train --comp <name>`, use `run_eval` and `status`.\n+6. Do not upload to contest sites. `prepare_submit` is local only.\n+7. If `train` MCP tool errors because of the gate, that is correct — use `request_train`.\n+\n+## Improve cycle\n+\n+1. `status` / `get_competition` / experiment log\n+2. One change (config or code)\n+3. `request_train` with rationale\n+4. Stop and give: `maximus train --comp <name>`\n+5. After approval + train: `run_eval` → report metric delta\n+\n+## References\n+\n+- Prompt pack: `prompts/improve.md`, `prompts/bootstrap.md`, `prompts/diagnose.md`\n+- Operator guide: `docs/OPERATOR-GUIDE.md`\ndiff --git a/.gitignore b/.gitignore\nindex e738244..d1464d5 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -16,3 +16,19 @@ build/\n \n # Project-specific cache\n docs/cache/\n+\n+# Competition run outputs\n+competitions/*/artifacts/*\n+!competitions/*/artifacts/.gitkeep\n+templates/competition/artifacts/*\n+!templates/competition/artifacts/.gitkeep\n+\n+# Experiment runtime state\n+competitions/*/experiments/history.jsonl\n+competitions/*/experiments/pending_train.md\n+**/experiments/.*.lock\n+\n+# Experiment logs (local only)\n+competitions/*/experiments/log.md\n+templates/competition/experiments/log.md\n+\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..15ccd5a\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,90 @@\n+# Maximus\n+\n+LLM ML-engineer harness for competition workflows.\n+\n+Maximus wraps an agent in a fixed **propose → (you approve train) → eval → log → improve** loop so you can iterate on contest models without pasting logs by hand — and without letting the agent burn compute unsupervised.\n+\n+- **[Quick Start](docs/QUICK-START.md)** — install and run `toy_binary` in minutes\n+- **[Operator Guide](docs/OPERATOR-GUIDE.md)** — CLI, MCP tools, train gate, troubleshooting\n+\n+## What it is\n+\n+- A **CLI** for train / eval / submit / status\n+- An **MCP server** so a Cursor agent can do grunt work (status, logs, scoped edits, eval, submit prep)\n+- A **gated train** path: the agent may only `request_train`; you run `maximus train`\n+- An **experiment log** with a strict `metrics.json` contract\n+- A **toy competition** (`toy_binary`) to prove the loop on CPU\n+\n+## What it is not\n+\n+- Not AutoML that trains in a loop unsupervised\n+- Not a DrivenData/Kaggle uploader\n+- Not a GEMS/geophysics solution (add real contests later as new folders)\n+\n+## Features\n+\n+| Feature | Notes |\n+|---------|--------|\n+| CLI | `maximus train\\|eval\\|submit\\|status\\|log\\|new\\|mcp` |\n+| MCP tools | Status, logs, scoped file I/O, eval, submit prep, `request_train` |\n+| Train gate | MCP `train` refused unless `MAXIMUS_ALLOW_TRAIN=1` |\n+| Experiment log | `experiments/log.md` + `history.jsonl` |\n+| Template | `maximus new <name>` |\n+| Toy demo | Logistic regression / optional random forest, ROC-AUC |\n+\n+## Requirements\n+\n+- Python 3.10+\n+- macOS/Linux recommended\n+\n+## Install\n+\n+```bash\n+cd /path/to/maximus\n+pip install -e .\n+```\n+\n+## Quickstart\n+\n+```bash\n+maximus train --comp toy_binary\n+maximus eval --comp toy_binary\n+maximus status --comp toy_binary\n+```\n+\n+Full steps: [docs/QUICK-START.md](docs/QUICK-START.md).\n+\n+## CLI / MCP overview\n+\n+Human path (includes train):\n+\n+```bash\n+maximus train --comp toy_binary\n+maximus eval --comp toy_binary\n+maximus status --comp toy_binary\n+```\n+\n+Agent path: connect Cursor to `maximus mcp`, then use tools for status/edits/`request_train`/`run_eval`. Details: [docs/OPERATOR-GUIDE.md](docs/OPERATOR-GUIDE.md).\n+\n+## Project structure\n+\n+```text\n+maximus/\n+  src/maximus/           # CLI + MCP + shared services\n+  competitions/          # One folder per contest\n+    toy_binary/\n+  templates/competition/ # Scaffold for maximus new\n+  prompts/               # Improve / bootstrap / diagnose\n+  docs/                  # Quick Start + Operator Guide\n+  .cursor/skills/        # Agent skill for this repo\n+```\n+\n+## Roadmap (after MVP)\n+\n+- Add real contests as `competitions/<name>` (e.g. GEMS) once the toy loop feels boring\n+- Optional heavier eval gating per competition\n+- No autonomous multi-train loops in the default path\n+\n+## License\n+\n+No license file in this repo yet.\ndiff --git a/competitions/toy_binary/experiments/log.md b/competitions/toy_binary/experiments/log.md\ndeleted file mode 100644\nindex b8ce359..0000000\n--- a/competitions/toy_binary/experiments/log.md\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-# Experiment log — toy_binary\n-\ndiff --git a/docs/OPERATOR-GUIDE.md b/docs/OPERATOR-GUIDE.md\nnew file mode 100644\nindex 0000000..194d023\n--- /dev/null\n+++ b/docs/OPERATOR-GUIDE.md\n@@ -0,0 +1,117 @@\n+# Operator Guide\n+\n+How to operate Maximus as the human in the loop.\n+\n+## Concepts\n+\n+- **Competition folder** — `competitions/<name>/` with `competition.yaml`, code, configs, artifacts, experiments.\n+- **CLI** — you can run anything, including `train`.\n+- **MCP tools** — the agent automates grunt work; **train is gated**.\n+- **Experiment log** — every successful eval appends to `experiments/history.jsonl` and `experiments/log.md`.\n+\n+## Repo root contract\n+\n+Run Maximus from the repository root (the directory with `pyproject.toml`), or set:\n+\n+```bash\n+export MAXIMUS_ROOT=/path/to/maximus\n+```\n+\n+Tools resolve competitions from that root. Wrong cwd is a common failure mode.\n+\n+## CLI reference\n+\n+| Command | Purpose |\n+|---------|---------|\n+| `maximus list` | List competitions |\n+| `maximus new <name>` | Copy `templates/competition` → `competitions/<name>` |\n+| `maximus train --comp <name>` | Run training (human path) |\n+| `maximus eval --comp <name>` | Run eval; require `artifacts/metrics.json` with numeric `metric` |\n+| `maximus submit --comp <name>` | Build local submission artifact |\n+| `maximus status --comp <name>` | Best score + recent runs |\n+| `maximus log --comp <name> --note \"...\"` | Append a manual note |\n+| `maximus mcp` | Start MCP server on stdio |\n+\n+## Metrics contract\n+\n+After eval, `artifacts/metrics.json` must look like:\n+\n+```json\n+{\n+  \"metric\": 0.84\n+}\n+```\n+\n+`metric` must be a finite float. Extra fields are allowed. Soft/partial parses are rejected.\n+\n+## Train approval ritual\n+\n+1. Agent inspects status/logs and makes **one** change.\n+2. Agent calls MCP `request_train` → writes `experiments/pending_train.md`.\n+3. You review the proposal, then run:\n+\n+```bash\n+maximus train --comp <name>\n+```\n+\n+4. Agent calls `run_eval` / `status` (does not need you to paste metrics).\n+\n+The MCP `train` tool refuses unless `MAXIMUS_ALLOW_TRAIN=1`. Prefer the ritual above.\n+\n+## MCP setup (Cursor)\n+\n+1. Install the package (`pip install -e .`) so `maximus` is on your PATH.\n+2. Add an MCP server that runs `maximus mcp` (stdio) from the repo root.\n+3. Restart MCP / Cursor so tools appear.\n+\n+### Agent-facing tools\n+\n+| Tool | Purpose |\n+|------|---------|\n+| `list_competitions` | Discover contests |\n+| `get_competition` | Contract + short log |\n+| `status` | Best + recent runs |\n+| `read_experiment_log_tool` | Markdown log |\n+| `read_metrics` | Latest metrics.json |\n+| `read_allowed_file` / `write_allowed_file` | Scoped edits |\n+| `run_eval` | Eval + log (if allowed) |\n+| `prepare_submit` | Local submission only |\n+| `diagnose_last_run` | Tail last run logs |\n+| `request_train` | Proposal only — does not train |\n+| `train` | Gated; normally refused |\n+\n+Per-competition: set `tooling.eval_allowed_for_agent: false` in `competition.yaml` if eval is expensive.\n+\n+## Adding a competition\n+\n+```bash\n+maximus new my_contest\n+```\n+\n+Then implement `src/train.py`, `src/eval.py`, `src/submit.py`, and edit `competition.yaml` (commands, metric, allowed globs, paths).\n+\n+## Guardrails\n+\n+- Agent: one change per cycle; no auto-train loops.\n+- Agent: only edit `allowed_edit_globs`.\n+- Human: owns `train` and any cloud spend.\n+- No contest-site upload in Maximus MVP.\n+\n+## Troubleshooting\n+\n+| Symptom | What to try |\n+|---------|-------------|\n+| `Could not find Maximus repo root` | `cd` to repo or set `MAXIMUS_ROOT` |\n+| `Missing metrics file` | Ensure eval writes `artifacts/metrics.json` |\n+| `Run lock exists` | Another run in progress, or crash; remove `artifacts/.train.lock` if safe |\n+| MCP tools missing | Confirm `maximus mcp` works; check Cursor MCP config and PATH |\n+| `Train is gated` on MCP | Expected — use `request_train` + CLI train |\n+| Import errors in toy_binary | Run commands via `maximus` so cwd is the competition root |\n+\n+## Prompt pack\n+\n+- `prompts/improve.md`\n+- `prompts/bootstrap.md`\n+- `prompts/diagnose.md`\n+\n+Project skill: `.cursor/skills/maximus-ml-engineer/SKILL.md`\ndiff --git a/docs/QUICK-START.md b/docs/QUICK-START.md\nnew file mode 100644\nindex 0000000..4cd8cdd\n--- /dev/null\n+++ b/docs/QUICK-START.md\n@@ -0,0 +1,49 @@\n+# Quick Start\n+\n+Get Maximus running on the built-in `toy_binary` competition in a few minutes.\n+\n+## Install\n+\n+From the repo root:\n+\n+```bash\n+pip install -e .\n+```\n+\n+Confirm:\n+\n+```bash\n+maximus --version\n+maximus list\n+```\n+\n+## First loop\n+\n+```bash\n+maximus train --comp toy_binary\n+maximus eval --comp toy_binary\n+maximus status --comp toy_binary\n+```\n+\n+You should see a ROC-AUC metric in the status output and a new line in\n+`competitions/toy_binary/experiments/log.md`.\n+\n+Optional local submission artifact:\n+\n+```bash\n+maximus submit --comp toy_binary\n+```\n+\n+## One improve cycle (with an agent)\n+\n+1. Ask the Cursor agent to improve `toy_binary` (Maximus skill + MCP tools).\n+2. The agent edits one allowed file and calls `request_train`.\n+3. You approve compute:\n+\n+```bash\n+maximus train --comp toy_binary\n+```\n+\n+4. Tell the agent training finished; it runs eval/status via tools.\n+\n+See [Operator Guide](OPERATOR-GUIDE.md) for CLI/MCP details and guardrails.\ndiff --git a/prompts/bootstrap.md b/prompts/bootstrap.md\nnew file mode 100644\nindex 0000000..e31304c\n--- /dev/null\n+++ b/prompts/bootstrap.md\n@@ -0,0 +1,15 @@\n+# Bootstrap a competition\n+\n+You are bootstrapping a Maximus competition baseline.\n+\n+## Rules\n+\n+1. Read `competition.yaml` via `get_competition`.\n+2. Inspect allowed files only (`read_allowed_file`).\n+3. Create a minimal working train/eval/submit path if missing.\n+4. Do **not** call train. Use `request_train` when ready for the first run.\n+5. One coherent baseline — no architecture thrash.\n+\n+## Goal\n+\n+A first runnable baseline that writes `artifacts/metrics.json` with a numeric `metric`.\ndiff --git a/prompts/diagnose.md b/prompts/diagnose.md\nnew file mode 100644\nindex 0000000..846cf60\n--- /dev/null\n+++ b/prompts/diagnose.md\n@@ -0,0 +1,12 @@\n+# Diagnose a failed run\n+\n+A Maximus train or eval failed.\n+\n+## Steps\n+\n+1. `diagnose_last_run` for `train` and/or `eval`\n+2. `read_metrics` only if eval claimed success\n+3. Identify the root cause from logs\n+4. Make **one** fix within `allowed_edit_globs`\n+5. `request_train` if retraining is required; otherwise tell the human to re-run eval\n+6. Do not auto-train\ndiff --git a/prompts/improve.md b/prompts/improve.md\nnew file mode 100644\nindex 0000000..c4eb82f\n--- /dev/null\n+++ b/prompts/improve.md\n@@ -0,0 +1,19 @@\n+# Improve loop\n+\n+You are the Maximus ML engineer for a competition folder.\n+\n+## Rules\n+\n+1. Use Maximus MCP tools for status, logs, metrics, and allowed file edits. Do not ask the human to paste logs.\n+2. Make **exactly one** substantive change within `allowed_edit_globs`.\n+3. Call `request_train` with a short summary and rationale.\n+4. **Stop.** Do not train. Wait for the human to run `maximus train --comp <name>`.\n+5. After they confirm training finished, call `run_eval` and read `status`.\n+\n+## Steps\n+\n+1. `get_competition` + `status`\n+2. Read recent experiment log\n+3. Propose one change; `write_allowed_file` if needed\n+4. `request_train`\n+5. Stop and tell the human the approve command\ndiff --git a/templates/competition/experiments/log.md b/templates/competition/experiments/log.md\ndeleted file mode 100644\nindex d8c084f..0000000\n--- a/templates/competition/experiments/log.md\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-# Experiment log — template\n-\n",
+        "stats": {
+          "deletions": 4,
+          "files": [
+            {
+              "additions": 37,
+              "deletions": 0,
+              "path": ".cursor/skills/maximus-ml-engineer/SKILL.md",
+              "status": "A"
+            },
+            {
+              "additions": 16,
+              "deletions": 0,
+              "path": ".gitignore",
+              "status": "M"
+            },
+            {
+              "additions": 90,
+              "deletions": 0,
+              "path": "README.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 2,
+              "path": "competitions/toy_binary/experiments/log.md",
+              "status": "D"
+            },
+            {
+              "additions": 117,
+              "deletions": 0,
+              "path": "docs/OPERATOR-GUIDE.md",
+              "status": "A"
+            },
+            {
+              "additions": 49,
+              "deletions": 0,
+              "path": "docs/QUICK-START.md",
+              "status": "A"
+            },
+            {
+              "additions": 15,
+              "deletions": 0,
+              "path": "prompts/bootstrap.md",
+              "status": "A"
+            },
+            {
+              "additions": 12,
+              "deletions": 0,
+              "path": "prompts/diagnose.md",
+              "status": "A"
+            },
+            {
+              "additions": 19,
+              "deletions": 0,
+              "path": "prompts/improve.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 2,
+              "path": "templates/competition/experiments/log.md",
+              "status": "D"
+            }
+          ],
+          "files_changed": 10,
+          "insertions": 355
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": false,
+      "sha": "58bfd51706ab96600a86d883017c32b897aff04e",
+      "short_sha": "58bfd51",
+      "subject": "Document Maximus quick start and ops",
+      "summary": ""
+    },
+    {
+      "authored_at": "2026-09-17T22:56:06-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Provide maximus new scaffolding plus a CPU toy contest so\nthe train/eval/log loop can be proven without GPUs or\nexternal contest signup.\n",
+        "patch": "diff --git a/competitions/toy_binary/README.md b/competitions/toy_binary/README.md\nnew file mode 100644\nindex 0000000..6efac7c\n--- /dev/null\n+++ b/competitions/toy_binary/README.md\n@@ -0,0 +1,6 @@\n+# toy_binary\n+\n+Synthetic binary classification used to prove the Maximus train/eval/log loop\n+without GPUs or contest signup.\n+\n+Metric: ROC-AUC on a held-out split (written to `artifacts/metrics.json`).\ndiff --git a/competitions/toy_binary/artifacts/.gitkeep b/competitions/toy_binary/artifacts/.gitkeep\nnew file mode 100644\nindex 0000000..e69de29\ndiff --git a/competitions/toy_binary/competition.yaml b/competitions/toy_binary/competition.yaml\nnew file mode 100644\nindex 0000000..2e2ce31\n--- /dev/null\n+++ b/competitions/toy_binary/competition.yaml\n@@ -0,0 +1,19 @@\n+name: toy_binary\n+task: \"Synthetic binary classification — harness smoke test\"\n+metric:\n+  name: roc_auc\n+  higher_is_better: true\n+commands:\n+  train: \"python -m src.train\"\n+  eval: \"python -m src.eval\"\n+  submit: \"python -m src.submit\"\n+allowed_edit_globs:\n+  - \"src/**\"\n+  - \"configs/**\"\n+paths:\n+  data: data\n+  artifacts: artifacts\n+  submission: artifacts/submission.csv\n+tooling:\n+  eval_allowed_for_agent: true\n+  train_requires_approval: true\ndiff --git a/competitions/toy_binary/configs/default.yaml b/competitions/toy_binary/configs/default.yaml\nnew file mode 100644\nindex 0000000..6251b56\n--- /dev/null\n+++ b/competitions/toy_binary/configs/default.yaml\n@@ -0,0 +1,7 @@\n+model: logistic_regression\n+C: 1.0\n+max_iter: 200\n+seed: 42\n+n_samples: 800\n+n_features: 20\n+test_size: 0.25\ndiff --git a/competitions/toy_binary/experiments/log.md b/competitions/toy_binary/experiments/log.md\nnew file mode 100644\nindex 0000000..b8ce359\n--- /dev/null\n+++ b/competitions/toy_binary/experiments/log.md\n@@ -0,0 +1,2 @@\n+# Experiment log — toy_binary\n+\ndiff --git a/competitions/toy_binary/src/__init__.py b/competitions/toy_binary/src/__init__.py\nnew file mode 100644\nindex 0000000..e69de29\ndiff --git a/competitions/toy_binary/src/dataset.py b/competitions/toy_binary/src/dataset.py\nnew file mode 100644\nindex 0000000..4363f8d\n--- /dev/null\n+++ b/competitions/toy_binary/src/dataset.py\n@@ -0,0 +1,41 @@\n+\"\"\"Synthetic dataset for toy_binary.\"\"\"\n+\n+from __future__ import annotations\n+\n+from dataclasses import dataclass\n+\n+import numpy as np\n+from sklearn.datasets import make_classification\n+from sklearn.model_selection import train_test_split\n+\n+\n+@dataclass\n+class Split:\n+    X_train: np.ndarray\n+    X_test: np.ndarray\n+    y_train: np.ndarray\n+    y_test: np.ndarray\n+\n+\n+def load_split(\n+    *,\n+    n_samples: int,\n+    n_features: int,\n+    test_size: float,\n+    seed: int,\n+) -> Split:\n+    X, y = make_classification(\n+        n_samples=n_samples,\n+        n_features=n_features,\n+        n_informative=max(2, n_features // 2),\n+        n_redundant=max(0, n_features // 10),\n+        random_state=seed,\n+    )\n+    X_train, X_test, y_train, y_test = train_test_split(\n+        X,\n+        y,\n+        test_size=test_size,\n+        random_state=seed,\n+        stratify=y,\n+    )\n+    return Split(X_train, X_test, y_train, y_test)\ndiff --git a/competitions/toy_binary/src/eval.py b/competitions/toy_binary/src/eval.py\nnew file mode 100644\nindex 0000000..f3b48d0\n--- /dev/null\n+++ b/competitions/toy_binary/src/eval.py\n@@ -0,0 +1,41 @@\n+\"\"\"Evaluate toy_binary model; write artifacts/metrics.json.\"\"\"\n+\n+from __future__ import annotations\n+\n+import json\n+from pathlib import Path\n+\n+import joblib\n+from sklearn.metrics import roc_auc_score\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    artifacts = root / \"artifacts\"\n+    model_path = artifacts / \"model.joblib\"\n+    split_path = artifacts / \"split.joblib\"\n+    if not model_path.is_file():\n+        raise SystemExit(f\"Missing model at {model_path}; run train first\")\n+    if not split_path.is_file():\n+        raise SystemExit(f\"Missing split at {split_path}; run train first\")\n+\n+    model = joblib.load(model_path)\n+    split = joblib.load(split_path)\n+    X_test, y_test = split[\"X_test\"], split[\"y_test\"]\n+\n+    if hasattr(model, \"predict_proba\"):\n+        scores = model.predict_proba(X_test)[:, 1]\n+    else:\n+        scores = model.decision_function(X_test)\n+\n+    metric = float(roc_auc_score(y_test, scores))\n+    metrics = {\"metric\": metric, \"roc_auc\": metric}\n+    (artifacts / \"metrics.json\").write_text(\n+        json.dumps(metrics, indent=2) + \"\\n\",\n+        encoding=\"utf-8\",\n+    )\n+    print(json.dumps(metrics))\n+\n+\n+if __name__ == \"__main__\":\n+    main()\ndiff --git a/competitions/toy_binary/src/submit.py b/competitions/toy_binary/src/submit.py\nnew file mode 100644\nindex 0000000..6798969\n--- /dev/null\n+++ b/competitions/toy_binary/src/submit.py\n@@ -0,0 +1,31 @@\n+\"\"\"Build a local submission CSV for toy_binary.\"\"\"\n+\n+from __future__ import annotations\n+\n+from pathlib import Path\n+\n+import joblib\n+import numpy as np\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    artifacts = root / \"artifacts\"\n+    model = joblib.load(artifacts / \"model.joblib\")\n+    split = joblib.load(artifacts / \"split.joblib\")\n+    X_test = split[\"X_test\"]\n+    if hasattr(model, \"predict_proba\"):\n+        preds = model.predict_proba(X_test)[:, 1]\n+    else:\n+        preds = model.decision_function(X_test)\n+\n+    out = artifacts / \"submission.csv\"\n+    lines = [\"id,prediction\"]\n+    for i, p in enumerate(np.asarray(preds).tolist()):\n+        lines.append(f\"{i},{p:.8f}\")\n+    out.write_text(\"\\n\".join(lines) + \"\\n\", encoding=\"utf-8\")\n+    print(f\"wrote {out}\")\n+\n+\n+if __name__ == \"__main__\":\n+    main()\ndiff --git a/competitions/toy_binary/src/train.py b/competitions/toy_binary/src/train.py\nnew file mode 100644\nindex 0000000..6dbe411\n--- /dev/null\n+++ b/competitions/toy_binary/src/train.py\n@@ -0,0 +1,83 @@\n+\"\"\"Train a simple classifier for toy_binary.\"\"\"\n+\n+from __future__ import annotations\n+\n+import json\n+from pathlib import Path\n+\n+import joblib\n+import yaml\n+from sklearn.ensemble import RandomForestClassifier\n+from sklearn.linear_model import LogisticRegression\n+from sklearn.pipeline import Pipeline\n+from sklearn.preprocessing import StandardScaler\n+\n+from src.dataset import load_split\n+\n+\n+def load_config(root: Path) -> dict:\n+    path = root / \"configs\" / \"default.yaml\"\n+    with path.open(encoding=\"utf-8\") as f:\n+        return yaml.safe_load(f)\n+\n+\n+def build_model(cfg: dict):\n+    name = str(cfg.get(\"model\", \"logistic_regression\"))\n+    if name == \"logistic_regression\":\n+        clf = LogisticRegression(\n+            C=float(cfg.get(\"C\", 1.0)),\n+            max_iter=int(cfg.get(\"max_iter\", 200)),\n+            random_state=int(cfg.get(\"seed\", 42)),\n+        )\n+        return Pipeline([(\"scaler\", StandardScaler()), (\"clf\", clf)])\n+    if name == \"random_forest\":\n+        return RandomForestClassifier(\n+            n_estimators=int(cfg.get(\"n_estimators\", 100)),\n+            max_depth=cfg.get(\"max_depth\"),\n+            random_state=int(cfg.get(\"seed\", 42)),\n+        )\n+    raise ValueError(f\"Unknown model: {name}\")\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    cfg = load_config(root)\n+    split = load_split(\n+        n_samples=int(cfg[\"n_samples\"]),\n+        n_features=int(cfg[\"n_features\"]),\n+        test_size=float(cfg[\"test_size\"]),\n+        seed=int(cfg[\"seed\"]),\n+    )\n+    model = build_model(cfg)\n+    model.fit(split.X_train, split.y_train)\n+\n+    artifacts = root / \"artifacts\"\n+    artifacts.mkdir(parents=True, exist_ok=True)\n+    model_path = artifacts / \"model.joblib\"\n+    joblib.dump(model, model_path)\n+\n+    meta = {\n+        \"model\": cfg.get(\"model\"),\n+        \"n_train\": int(split.X_train.shape[0]),\n+        \"n_test\": int(split.X_test.shape[0]),\n+        \"config\": cfg,\n+    }\n+    (artifacts / \"train_meta.json\").write_text(\n+        json.dumps(meta, indent=2) + \"\\n\",\n+        encoding=\"utf-8\",\n+    )\n+    # Persist test split for eval reproducibility\n+    joblib.dump(\n+        {\n+            \"X_test\": split.X_test,\n+            \"y_test\": split.y_test,\n+            \"X_train\": split.X_train,\n+            \"y_train\": split.y_train,\n+        },\n+        artifacts / \"split.joblib\",\n+    )\n+    print(f\"wrote {model_path}\")\n+\n+\n+if __name__ == \"__main__\":\n+    main()\ndiff --git a/templates/competition/README.md b/templates/competition/README.md\nnew file mode 100644\nindex 0000000..762d558\n--- /dev/null\n+++ b/templates/competition/README.md\n@@ -0,0 +1,6 @@\n+# Competition template\n+\n+Copy via `maximus new <name>`, then implement `src/train.py`, `src/eval.py`,\n+and `src/submit.py` for your contest.\n+\n+Write `artifacts/metrics.json` with a numeric `metric` field after eval.\ndiff --git a/templates/competition/artifacts/.gitkeep b/templates/competition/artifacts/.gitkeep\nnew file mode 100644\nindex 0000000..e69de29\ndiff --git a/templates/competition/competition.yaml b/templates/competition/competition.yaml\nnew file mode 100644\nindex 0000000..a35aae7\n--- /dev/null\n+++ b/templates/competition/competition.yaml\n@@ -0,0 +1,19 @@\n+name: template\n+task: \"Replace with your competition task description\"\n+metric:\n+  name: metric\n+  higher_is_better: true\n+commands:\n+  train: \"python -m src.train\"\n+  eval: \"python -m src.eval\"\n+  submit: \"python -m src.submit\"\n+allowed_edit_globs:\n+  - \"src/**\"\n+  - \"configs/**\"\n+paths:\n+  data: data\n+  artifacts: artifacts\n+  submission: artifacts/submission.csv\n+tooling:\n+  eval_allowed_for_agent: true\n+  train_requires_approval: true\ndiff --git a/templates/competition/configs/default.yaml b/templates/competition/configs/default.yaml\nnew file mode 100644\nindex 0000000..6251b56\n--- /dev/null\n+++ b/templates/competition/configs/default.yaml\n@@ -0,0 +1,7 @@\n+model: logistic_regression\n+C: 1.0\n+max_iter: 200\n+seed: 42\n+n_samples: 800\n+n_features: 20\n+test_size: 0.25\ndiff --git a/templates/competition/experiments/log.md b/templates/competition/experiments/log.md\nnew file mode 100644\nindex 0000000..d8c084f\n--- /dev/null\n+++ b/templates/competition/experiments/log.md\n@@ -0,0 +1,2 @@\n+# Experiment log — template\n+\ndiff --git a/templates/competition/src/__init__.py b/templates/competition/src/__init__.py\nnew file mode 100644\nindex 0000000..e69de29\ndiff --git a/templates/competition/src/dataset.py b/templates/competition/src/dataset.py\nnew file mode 100644\nindex 0000000..f04ba3a\n--- /dev/null\n+++ b/templates/competition/src/dataset.py\n@@ -0,0 +1 @@\n+\"\"\"Dataset helpers stub.\"\"\"\ndiff --git a/templates/competition/src/eval.py b/templates/competition/src/eval.py\nnew file mode 100644\nindex 0000000..e88f873\n--- /dev/null\n+++ b/templates/competition/src/eval.py\n@@ -0,0 +1,22 @@\n+\"\"\"Eval stub — replace for your competition.\"\"\"\n+\n+from __future__ import annotations\n+\n+import json\n+from pathlib import Path\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    artifacts = root / \"artifacts\"\n+    artifacts.mkdir(parents=True, exist_ok=True)\n+    metrics = {\"metric\": 0.0}\n+    (artifacts / \"metrics.json\").write_text(\n+        json.dumps(metrics, indent=2) + \"\\n\",\n+        encoding=\"utf-8\",\n+    )\n+    print(json.dumps(metrics))\n+\n+\n+if __name__ == \"__main__\":\n+    main()\ndiff --git a/templates/competition/src/submit.py b/templates/competition/src/submit.py\nnew file mode 100644\nindex 0000000..cb962e2\n--- /dev/null\n+++ b/templates/competition/src/submit.py\n@@ -0,0 +1,18 @@\n+\"\"\"Submit stub — replace for your competition.\"\"\"\n+\n+from __future__ import annotations\n+\n+from pathlib import Path\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    artifacts = root / \"artifacts\"\n+    artifacts.mkdir(parents=True, exist_ok=True)\n+    out = artifacts / \"submission.csv\"\n+    out.write_text(\"id,prediction\\n0,0\\n\", encoding=\"utf-8\")\n+    print(f\"wrote {out}\")\n+\n+\n+if __name__ == \"__main__\":\n+    main()\ndiff --git a/templates/competition/src/train.py b/templates/competition/src/train.py\nnew file mode 100644\nindex 0000000..a357e1e\n--- /dev/null\n+++ b/templates/competition/src/train.py\n@@ -0,0 +1,17 @@\n+\"\"\"Train stub — replace for your competition.\"\"\"\n+\n+from __future__ import annotations\n+\n+from pathlib import Path\n+\n+\n+def main() -> None:\n+    root = Path(__file__).resolve().parents[1]\n+    artifacts = root / \"artifacts\"\n+    artifacts.mkdir(parents=True, exist_ok=True)\n+    (artifacts / \"model.txt\").write_text(\"stub\\n\", encoding=\"utf-8\")\n+    print(\"stub train complete\")\n+\n+\n+if __name__ == \"__main__\":\n+    main()\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 6,
+              "deletions": 0,
+              "path": "competitions/toy_binary/README.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 0,
+              "path": "competitions/toy_binary/artifacts/.gitkeep",
+              "status": "A"
+            },
+            {
+              "additions": 19,
+              "deletions": 0,
+              "path": "competitions/toy_binary/competition.yaml",
+              "status": "A"
+            },
+            {
+              "additions": 7,
+              "deletions": 0,
+              "path": "competitions/toy_binary/configs/default.yaml",
+              "status": "A"
+            },
+            {
+              "additions": 2,
+              "deletions": 0,
+              "path": "competitions/toy_binary/experiments/log.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 0,
+              "path": "competitions/toy_binary/src/__init__.py",
+              "status": "A"
+            },
+            {
+              "additions": 41,
+              "deletions": 0,
+              "path": "competitions/toy_binary/src/dataset.py",
+              "status": "A"
+            },
+            {
+              "additions": 41,
+              "deletions": 0,
+              "path": "competitions/toy_binary/src/eval.py",
+              "status": "A"
+            },
+            {
+              "additions": 31,
+              "deletions": 0,
+              "path": "competitions/toy_binary/src/submit.py",
+              "status": "A"
+            },
+            {
+              "additions": 83,
+              "deletions": 0,
+              "path": "competitions/toy_binary/src/train.py",
+              "status": "A"
+            },
+            {
+              "additions": 6,
+              "deletions": 0,
+              "path": "templates/competition/README.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 0,
+              "path": "templates/competition/artifacts/.gitkeep",
+              "status": "A"
+            },
+            {
+              "additions": 19,
+              "deletions": 0,
+              "path": "templates/competition/competition.yaml",
+              "status": "A"
+            },
+            {
+              "additions": 7,
+              "deletions": 0,
+              "path": "templates/competition/configs/default.yaml",
+              "status": "A"
+            },
+            {
+              "additions": 2,
+              "deletions": 0,
+              "path": "templates/competition/experiments/log.md",
+              "status": "A"
+            },
+            {
+              "additions": 0,
+              "deletions": 0,
+              "path": "templates/competition/src/__init__.py",
+              "status": "A"
+            },
+            {
+              "additions": 1,
+              "deletions": 0,
+              "path": "templates/competition/src/dataset.py",
+              "status": "A"
+            },
+            {
+              "additions": 22,
+              "deletions": 0,
+              "path": "templates/competition/src/eval.py",
+              "status": "A"
+            },
+            {
+              "additions": 18,
+              "deletions": 0,
+              "path": "templates/competition/src/submit.py",
+              "status": "A"
+            },
+            {
+              "additions": 17,
+              "deletions": 0,
+              "path": "templates/competition/src/train.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 20,
+          "insertions": 322
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": false,
+      "sha": "e7b6dec1612644983ed8253cc24d4b301b980e12",
+      "short_sha": "e7b6dec",
+      "subject": "Add competition template and toy_binary",
+      "summary": ""
+    }
+  ],
+  "updated_at": "2026-09-29T18:17:15.939210+00:00",
+  "working_tree": {
+    "clean": true,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": []
+  }
+}
