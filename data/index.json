@@ -39,8 +39,18 @@
       "source": "MBP-64GB.local",
       "updated_at": "2026-09-29T18:14:25.188368+00:00",
       "working_tree_clean": true
+    },
+    {
+      "ahead_count": 6,
+      "base_ref": "last-pushed → cf61b47 (local HEAD~6; fully pushed)",
+      "branch": "dev",
+      "id": "world-sim",
+      "name": "world-sim",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:16:49.925551+00:00",
+      "working_tree_clean": true
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:16:32.068062+00:00"
+  "updated_at": "2026-09-29T18:16:49.925551+00:00"
 }
