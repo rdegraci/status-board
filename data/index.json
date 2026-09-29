@@ -1,6 +1,16 @@
 {
   "repos": [
     {
+      "ahead_count": 6,
+      "base_ref": "last-pushed → e342c7d (local HEAD~6; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "lorebuilder-cli",
+      "name": "lorebuilder-cli",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:16:16.046535+00:00",
+      "working_tree_clean": false
+    },
+    {
       "ahead_count": 17,
       "base_ref": "last-pushed → d53d58d (origin/main)",
       "branch": "main",
@@ -22,5 +32,5 @@
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:14:25.188368+00:00"
+  "updated_at": "2026-09-29T18:16:16.046535+00:00"
 }

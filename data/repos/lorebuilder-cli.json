@@ -1,0 +1,487 @@
+{
+  "ahead_count": 6,
+  "base_ref": "last-pushed → e342c7d (local HEAD~6; fully pushed (origin/main))",
+  "base_sha": "e342c7d061ee986b6832f5b7bf89c82c293658c4",
+  "branch": "main",
+  "commit_count": 6,
+  "files_touched_total": 32,
+  "future_steps": [],
+  "head_sha": "d3b4dc0e860764876e46788c170afd645526c09e",
+  "head_story": {
+    "features": [],
+    "text": ""
+  },
+  "range_label": "e342c7d..d3b4dc0",
+  "repo": {
+    "id": "lorebuilder-cli",
+    "name": "lorebuilder-cli",
+    "path": "/Users/rdegraci/Hack/lorebuilder-cli",
+    "remote": "github-personal/rdegraci/lorebuilder-cli"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [
+    {
+      "authored_at": "2026-08-23T22:49:16-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Allow lore-extracted characters to be given a separate display name\nwithout changing the source lore text. Users can now rename a character\nfor chat and listing, and the new name is used consistently in session\nhistory, character lists, and lore lookup.\n\nThis also updates the CLI help and docs to surface the new command, and\nkeeps existing chat history accessible after a rename.\n",
+        "patch": "diff --git a/INSTRUCTIONS.md b/INSTRUCTIONS.md\nindex 614c14d..0694e36 100644\n--- a/INSTRUCTIONS.md\n+++ b/INSTRUCTIONS.md\n@@ -79,9 +79,10 @@ You>> Who rules Ardelune?\n Mara>> The council of scholars holds power in Ardelune.\n You>> end_chat\n reset_chat Mara\n+rename_character Warlord Valeria\n ```\n \n-Conversation history is saved per character. Type `end_chat` to leave a `chat_with` session. Use `reset_chat` to clear a character's history and start fresh.\n+Conversation history is saved per character. Type `end_chat` to leave a `chat_with` session. Use `reset_chat` to clear history, or `rename_character` to set a display name for a lore-extracted character.\n \n ---\n \ndiff --git a/README.md b/README.md\nindex 32049b3..0e4a049 100644\n--- a/README.md\n+++ b/README.md\n@@ -39,7 +39,7 @@ On first run, `app.yaml` and `.env` are created automatically from the example f\n - Type `help` or `help <command>` inside the CLI.\n - Example command categories:\n   - **Lore:** `add_lore`, `generate_lore`, `store_generated_lore`, `query_lore`, `list_all_lore`, `delete_lore`\n-  - **Characters:** `chat_to`, `chat_with`, `reset_chat`, `list_characters`\n+  - **Characters:** `chat_to`, `chat_with`, `reset_chat`, `rename_character`, `list_characters`\n   - **System:** `help`, `exit`\n \n ---\ndiff --git a/bootstrap.py b/bootstrap.py\nindex ba0cb9c..29fb0b9 100644\n--- a/bootstrap.py\n+++ b/bootstrap.py\n@@ -13,6 +13,7 @@ from dotenv import load_dotenv\n import os\n from rich import print as rprint\n import chat_history\n+import character_aliases\n import lore\n import lore_entities\n from lore_entities import extract_character_names_from_lore\n@@ -106,6 +107,7 @@ def initialize_app():\n \n     # Chat DB\n     chat_history.initialize_db()\n+    character_aliases.initialize_db()\n \n     # Module dependency injection\n     rprint(\"[dim]Initializing modules...[/dim]\")\ndiff --git a/character_aliases.py b/character_aliases.py\nnew file mode 100644\nindex 0000000..c18cf83\n--- /dev/null\n+++ b/character_aliases.py\n@@ -0,0 +1,218 @@\n+\"\"\"\n+character_aliases.py\n+\n+Persistent display-name aliases for characters extracted from lore.\n+Maps lore names (spaCy NER) to preferred chat names without editing lore text.\n+\"\"\"\n+import sqlite3\n+from typing import Dict, List, Optional, Set, Tuple\n+\n+from constants import DEFAULT_CHAT_DB_FILE, ERROR_DB_INIT_FAILED\n+from lore_fuzzy import find_best_character_match\n+\n+\n+class CharacterAliasService:\n+    \"\"\"SQLite-backed lore_name -> display_name mappings.\"\"\"\n+\n+    def __init__(self, db_file: Optional[str] = None):\n+        self.db_file = db_file or DEFAULT_CHAT_DB_FILE\n+\n+    def initialize_db(self) -> None:\n+        \"\"\"Create the character_aliases table if it does not exist.\"\"\"\n+        try:\n+            with sqlite3.connect(self.db_file) as conn:\n+                conn.execute(\n+                    \"\"\"\n+                    CREATE TABLE IF NOT EXISTS character_aliases (\n+                        lore_name TEXT PRIMARY KEY,\n+                        display_name TEXT NOT NULL\n+                    )\n+                    \"\"\"\n+                )\n+                conn.commit()\n+        except sqlite3.Error as e:\n+            raise sqlite3.Error(f\"{ERROR_DB_INIT_FAILED}: {e}\")\n+\n+    def set_alias(self, lore_name: str, display_name: str) -> None:\n+        \"\"\"Map a lore name to a display/chat name.\"\"\"\n+        self.initialize_db()\n+        lore_name = lore_name.strip()\n+        display_name = display_name.strip()\n+        if not lore_name or not display_name:\n+            raise ValueError(\"Lore name and display name cannot be empty\")\n+\n+        with sqlite3.connect(self.db_file) as conn:\n+            conn.execute(\n+                \"\"\"\n+                INSERT INTO character_aliases (lore_name, display_name)\n+                VALUES (?, ?)\n+                ON CONFLICT(lore_name) DO UPDATE SET display_name=excluded.display_name\n+                \"\"\",\n+                (lore_name, display_name),\n+            )\n+            conn.commit()\n+\n+    def get_all(self) -> Dict[str, str]:\n+        \"\"\"Return all lore_name -> display_name mappings.\"\"\"\n+        self.initialize_db()\n+        with sqlite3.connect(self.db_file) as conn:\n+            rows = conn.execute(\n+                \"SELECT lore_name, display_name FROM character_aliases\"\n+            ).fetchall()\n+        return {lore_name: display_name for lore_name, display_name in rows}\n+\n+    def get_display_name(self, lore_name: str, aliases: Optional[Dict[str, str]] = None) -> str:\n+        \"\"\"Return the display name for a lore name, or the lore name itself.\"\"\"\n+        mapping = aliases if aliases is not None else self.get_all()\n+        return mapping.get(lore_name, lore_name)\n+\n+    def build_effective_characters(\n+        self,\n+        characters_in_lore: Set[str],\n+        aliases: Optional[Dict[str, str]] = None,\n+    ) -> Set[str]:\n+        \"\"\"Return display names used for list_characters and chat resolution.\"\"\"\n+        mapping = aliases if aliases is not None else self.get_all()\n+        return {mapping.get(name, name) for name in characters_in_lore}\n+\n+    def lore_search_terms(\n+        self,\n+        display_name: str,\n+        characters_in_lore: Set[str],\n+        aliases: Optional[Dict[str, str]] = None,\n+    ) -> List[str]:\n+        \"\"\"Terms to include when querying lore for a character.\"\"\"\n+        mapping = aliases if aliases is not None else self.get_all()\n+        terms = [display_name]\n+        for lore_name, alias_display in mapping.items():\n+            if alias_display == display_name and lore_name in characters_in_lore:\n+                terms.append(lore_name)\n+        if display_name in characters_in_lore and display_name not in terms:\n+            terms.append(display_name)\n+        return list(dict.fromkeys(terms))\n+\n+    def find_lore_name(\n+        self,\n+        name: str,\n+        characters_in_lore: Set[str],\n+        aliases: Optional[Dict[str, str]] = None,\n+    ) -> Optional[str]:\n+        \"\"\"Resolve a user-supplied name to its underlying lore name.\"\"\"\n+        mapping = aliases if aliases is not None else self.get_all()\n+        query = name.strip()\n+        if not query:\n+            return None\n+\n+        if query in characters_in_lore:\n+            return query\n+        if query in mapping:\n+            return query\n+\n+        for lore_name, display_name in mapping.items():\n+            if display_name.lower() == query.lower():\n+                return lore_name\n+\n+        effective = self.build_effective_characters(characters_in_lore, mapping)\n+        best_match, _ = find_best_character_match(query, effective)\n+        if best_match:\n+            for lore_name in characters_in_lore:\n+                if mapping.get(lore_name, lore_name) == best_match:\n+                    return lore_name\n+            if best_match in characters_in_lore:\n+                return best_match\n+\n+        best_match, _ = find_best_character_match(query, characters_in_lore)\n+        if best_match:\n+            return best_match\n+\n+        return None\n+\n+    def resolve_display_name(\n+        self,\n+        query: str,\n+        characters_in_lore: Set[str],\n+        aliases: Optional[Dict[str, str]] = None,\n+    ) -> Tuple[Optional[str], List[str]]:\n+        \"\"\"\n+        Resolve user input to a display/chat name.\n+\n+        Returns:\n+            (display_name, close_matches)\n+        \"\"\"\n+        mapping = aliases if aliases is not None else self.get_all()\n+        effective = self.build_effective_characters(characters_in_lore, mapping)\n+        if not query or not effective:\n+            return None, []\n+\n+        query_stripped = query.strip()\n+        for display_name in effective:\n+            if display_name.lower() == query_stripped.lower():\n+                return display_name, [display_name]\n+\n+        for lore_name, display_name in mapping.items():\n+            if lore_name.lower() == query_stripped.lower() and lore_name in characters_in_lore:\n+                return display_name, [display_name]\n+\n+        best_match, close_matches = find_best_character_match(query_stripped, effective)\n+        if best_match:\n+            return best_match, close_matches\n+\n+        best_lore, close_lore = find_best_character_match(query_stripped, characters_in_lore)\n+        if best_lore:\n+            display = mapping.get(best_lore, best_lore)\n+            return display, close_lore\n+\n+        return None, close_matches or close_lore\n+\n+\n+_alias_service = CharacterAliasService()\n+\n+\n+def initialize_db() -> None:\n+    \"\"\"Create alias tables if they do not exist.\"\"\"\n+    return _alias_service.initialize_db()\n+\n+\n+def set_alias(lore_name: str, display_name: str) -> None:\n+    \"\"\"Map a lore name to a display/chat name.\"\"\"\n+    return _alias_service.set_alias(lore_name, display_name)\n+\n+\n+def get_all() -> Dict[str, str]:\n+    \"\"\"Return all lore_name -> display_name mappings.\"\"\"\n+    return _alias_service.get_all()\n+\n+\n+def build_effective_characters(\n+    characters_in_lore: Set[str],\n+    aliases: Optional[Dict[str, str]] = None,\n+) -> Set[str]:\n+    \"\"\"Return display names used for list_characters and chat resolution.\"\"\"\n+    return _alias_service.build_effective_characters(characters_in_lore, aliases)\n+\n+\n+def lore_search_terms(\n+    display_name: str,\n+    characters_in_lore: Set[str],\n+    aliases: Optional[Dict[str, str]] = None,\n+) -> List[str]:\n+    \"\"\"Terms to include when querying lore for a character.\"\"\"\n+    return _alias_service.lore_search_terms(display_name, characters_in_lore, aliases)\n+\n+\n+def find_lore_name(\n+    name: str,\n+    characters_in_lore: Set[str],\n+    aliases: Optional[Dict[str, str]] = None,\n+) -> Optional[str]:\n+    \"\"\"Resolve a user-supplied name to its underlying lore name.\"\"\"\n+    return _alias_service.find_lore_name(name, characters_in_lore, aliases)\n+\n+\n+def resolve_display_name(\n+    query: str,\n+    characters_in_lore: Set[str],\n+    aliases: Optional[Dict[str, str]] = None,\n+) -> Tuple[Optional[str], List[str]]:\n+    \"\"\"Resolve user input to a display/chat name.\"\"\"\n+    return _alias_service.resolve_display_name(query, characters_in_lore, aliases)\ndiff --git a/chat_history.py b/chat_history.py\nindex d6cdbe8..c87f16a 100644\n--- a/chat_history.py\n+++ b/chat_history.py\n@@ -264,7 +264,26 @@ class ChatHistoryService:\n                 ]\n         except sqlite3.Error as e:\n             raise sqlite3.Error(f\"{ERROR_HISTORY_EXPORT_FAILED} {session_id}: {e}\")\n-    \n+\n+    def rename_session_character(self, old_character: str, new_character: str) -> int:\n+        \"\"\"Rename a chat session's character key. Returns number of rows updated.\"\"\"\n+        if not old_character.strip() or not new_character.strip():\n+            raise ValueError(ERROR_EMPTY_CHARACTER_NAME)\n+\n+        try:\n+            with self.get_connection() as conn:\n+                cur = conn.cursor()\n+                cur.execute(\n+                    \"UPDATE chat_sessions SET character=? WHERE character=?\",\n+                    (new_character.strip(), old_character.strip()),\n+                )\n+                conn.commit()\n+                return cur.rowcount\n+        except sqlite3.Error as e:\n+            raise sqlite3.Error(\n+                f\"{ERROR_SESSION_OPERATION_FAILED} '{old_character}' -> '{new_character}': {e}\"\n+            )\n+\n     def list_sessions(self, character: Optional[str] = None) -> List[Tuple[int, str, str]]:\n         \"\"\"List all chat sessions, optionally filtered by character.\n         \n@@ -338,6 +357,10 @@ def list_sessions(character: Optional[str] = None) -> List[Tuple[int, str, str]]\n     \"\"\"List all chat sessions, optionally filtered by character. Returns (id, character, last_active).\"\"\"\n     return _chat_history_service.list_sessions(character)\n \n+def rename_session_character(old_character: str, new_character: str) -> int:\n+    \"\"\"Rename a chat session's character key. Returns number of rows updated.\"\"\"\n+    return _chat_history_service.rename_session_character(old_character, new_character)\n+\n # Ensure tables exist if script is run\n if __name__ == \"__main__\":\n     try:\ndiff --git a/commands/__init__.py b/commands/__init__.py\nindex db920d2..a5e35e2 100644\n--- a/commands/__init__.py\n+++ b/commands/__init__.py\n@@ -10,6 +10,7 @@ from .store_generated_lore import handle as store_generated_lore\n from .chat_to import handle as chat_to\n from .chat_with import handle as chat_with\n from .reset_chat import handle as reset_chat\n+from .rename_character import handle as rename_character\n from .list_characters import handle as list_characters\n \n # Import handlers directly from the modules\n@@ -23,6 +24,7 @@ COMMANDS_REGISTRY = {\n     \"chat_to\": chat_to,\n     \"chat_with\": chat_with,\n     \"reset_chat\": reset_chat,\n+    \"rename_character\": rename_character,\n     \"list_characters\": list_characters,\n \n     # Commands from lore.py\ndiff --git a/commands/chat_common.py b/commands/chat_common.py\nindex 23f1f09..43bb4d1 100644\n--- a/commands/chat_common.py\n+++ b/commands/chat_common.py\n@@ -10,9 +10,9 @@ import litellm\n from rich import print as rprint\n \n import chat_history\n+import character_aliases\n import lore\n from llm_utils import extract_completion_text\n-from lore_fuzzy import find_best_character_match\n \n \n def check_lore_service(command_name: str) -> bool:\n@@ -55,6 +55,60 @@ def parse_character_from_args(args: List[str]) -> Tuple[Optional[str], Optional[\n     return \" \".join(args).strip(), None\n \n \n+def _take_character_name(args: List[str]) -> Tuple[Optional[str], List[str]]:\n+    \"\"\"Parse one character name from the front of args and return the remainder.\"\"\"\n+    if not args:\n+        return None, []\n+\n+    first_arg = args[0]\n+    if first_arg.startswith('\"') or first_arg.startswith(\"'\"):\n+        opening_quote = first_arg[0]\n+        char_name_parts = []\n+        part = first_arg[1:]\n+        if part:\n+            char_name_parts.append(part)\n+\n+        for i in range(1, len(args)):\n+            if args[i].endswith(opening_quote):\n+                if len(args[i]) > 1:\n+                    char_name_parts.append(args[i][:-1])\n+                return \" \".join(char_name_parts).strip(), args[i + 1 :]\n+            char_name_parts.append(args[i])\n+\n+        return \" \".join(char_name_parts).strip(), []\n+\n+    return first_arg.strip(), args[1:]\n+\n+\n+def parse_two_character_names(args: List[str]) -> Tuple[Optional[str], Optional[str], Optional[str]]:\n+    \"\"\"\n+    Parse two character names from CLI args for rename_character.\n+\n+    Returns:\n+        (old_name, new_name, warning_message)\n+    \"\"\"\n+    if len(args) < 2:\n+        return None, None, None\n+\n+    args = list(args)\n+    if args[0].startswith('\"') or args[0].startswith(\"'\"):\n+        old_name, remainder = _take_character_name(args)\n+        if not old_name or not remainder:\n+            return None, None, None\n+\n+        new_name, extra = _take_character_name(remainder)\n+        if not new_name:\n+            return None, None, None\n+\n+        warning = \"[yellow]Warning: Extra arguments ignored.\" if extra else None\n+        return old_name, new_name, warning\n+\n+    if len(args) == 2:\n+        return args[0].strip(), args[1].strip(), None\n+\n+    return \" \".join(args[:-1]).strip(), args[-1].strip(), None\n+\n+\n def parse_character_and_message(args: List[str]) -> Tuple[Optional[str], Optional[str], Optional[str]]:\n     \"\"\"\n     Parse character name and message for chat_to.\n@@ -90,18 +144,36 @@ def parse_character_and_message(args: List[str]) -> Tuple[Optional[str], Optiona\n     return character_name, user_message, None\n \n \n+def build_lore_query(\n+    display_name: str,\n+    extra: str,\n+    characters_in_lore: Set[str],\n+) -> str:\n+    \"\"\"Build a lore search query using display and underlying lore names.\"\"\"\n+    aliases = character_aliases.get_all()\n+    terms = character_aliases.lore_search_terms(display_name, characters_in_lore, aliases)\n+    parts = terms + ([extra] if extra else [])\n+    return \" \".join(part for part in parts if part)\n+\n+\n def resolve_character(\n     character_name: str,\n     characters_in_lore: Set[str],\n ) -> Optional[str]:\n     \"\"\"\n-    Fuzzy-match a character name against lore characters.\n+    Fuzzy-match a character name against lore characters and aliases.\n \n-    Returns the resolved character name, or None after printing errors.\n+    Returns the resolved display/chat name, or None after printing errors.\n     \"\"\"\n-    best_match, close_matches = find_best_character_match(character_name, characters_in_lore)\n+    aliases = character_aliases.get_all()\n+    lore_characters = set(characters_in_lore)\n+    display_name, close_matches = character_aliases.resolve_display_name(\n+        character_name,\n+        lore_characters,\n+        aliases,\n+    )\n \n-    if not best_match:\n+    if not display_name:\n         rprint(f\"[red]Character '{character_name}' is not mentioned in any world lore.\")\n         if close_matches:\n             suggestions = \", \".join(close_matches)\n@@ -109,10 +181,10 @@ def resolve_character(\n         rprint(\"Use 'list_characters' to see known characters.\")\n         return None\n \n-    if best_match.strip().lower() != character_name.strip().lower():\n-        rprint(f\"[yellow]Interpreting '{character_name}' as '{best_match}' for this session.\")\n+    if display_name.strip().lower() != character_name.strip().lower():\n+        rprint(f\"[yellow]Interpreting '{character_name}' as '{display_name}' for this session.\")\n \n-    return best_match\n+    return display_name\n \n \n def format_character_line(character_name: str, message: str) -> str:\n@@ -140,14 +212,20 @@ def print_recent_history(character_name: str, session_id: int, limit: int = 4) -\n     rprint(\"\")\n \n \n-def send_message_and_get_reply(character_name: str, user_message: str) -> str:\n+def send_message_and_get_reply(\n+    character_name: str,\n+    user_message: str,\n+    characters_in_lore: Optional[Set[str]] = None,\n+) -> str:\n     \"\"\"\n     Store the user message, call the LLM, store the reply, and return reply text.\n     \"\"\"\n     session_id = chat_history.get_or_create_session(character_name)\n     chat_history.add_message(session_id, \"user\", user_message)\n \n-    relevant_lore = lore.query_lore_internal(f\"{character_name} {user_message}\", 3)\n+    lore_chars = set(characters_in_lore or [])\n+    lore_query = build_lore_query(character_name, user_message, lore_chars)\n+    relevant_lore = lore.query_lore_internal(lore_query, 3)\n     messages = chat_history.get_history(session_id)\n     context_str = (\n         \"\\n\\n\".join(relevant_lore)\n@@ -181,17 +259,28 @@ def send_message_and_get_reply(character_name: str, user_message: str) -> str:\n     return reply\n \n \n-def send_message_and_get_reply_safe(character_name: str, user_message: str) -> Optional[str]:\n+def send_message_and_get_reply_safe(\n+    character_name: str,\n+    user_message: str,\n+    characters_in_lore: Optional[Set[str]] = None,\n+) -> Optional[str]:\n     \"\"\"Call send_message_and_get_reply and print errors instead of raising.\"\"\"\n     try:\n-        return send_message_and_get_reply(character_name, user_message)\n+        return send_message_and_get_reply(\n+            character_name,\n+            user_message,\n+            characters_in_lore=characters_in_lore,\n+        )\n     except Exception as e:\n         traceback.print_exc()\n         rprint(f\"[red]Error during LLM chat: {str(e)}\")\n         return None\n \n \n-def generate_opening_greeting(character_name: str) -> Optional[str]:\n+def generate_opening_greeting(\n+    character_name: str,\n+    characters_in_lore: Optional[Set[str]] = None,\n+) -> Optional[str]:\n     \"\"\"\n     Generate an in-character greeting when starting a new conversation.\n \n@@ -201,7 +290,9 @@ def generate_opening_greeting(character_name: str) -> Optional[str]:\n     if chat_history.get_history(session_id, limit=1):\n         return None\n \n-    relevant_lore = lore.query_lore_internal(character_name, 3)\n+    lore_chars = set(characters_in_lore or [])\n+    lore_query = build_lore_query(character_name, \"\", lore_chars)\n+    relevant_lore = lore.query_lore_internal(lore_query, 3)\n     context_str = (\n         \"\\n\\n\".join(relevant_lore)\n         if relevant_lore\n@@ -236,10 +327,16 @@ def generate_opening_greeting(character_name: str) -> Optional[str]:\n     return reply\n \n \n-def generate_opening_greeting_safe(character_name: str) -> Optional[str]:\n+def generate_opening_greeting_safe(\n+    character_name: str,\n+    characters_in_lore: Optional[Set[str]] = None,\n+) -> Optional[str]:\n     \"\"\"Call generate_opening_greeting and print errors instead of raising.\"\"\"\n     try:\n-        return generate_opening_greeting(character_name)\n+        return generate_opening_greeting(\n+            character_name,\n+            characters_in_lore=characters_in_lore,\n+        )\n     except Exception as e:\n         traceback.print_exc()\n         rprint(f\"[red]Error generating greeting: {str(e)}\")\ndiff --git a/commands/chat_to.py b/commands/chat_to.py\nindex 5d0d61a..c0666d2 100644\n--- a/commands/chat_to.py\n+++ b/commands/chat_to.py\n@@ -38,6 +38,11 @@ def handle(args, context):\n     if not character_to_use:\n         return\n \n-    reply = send_message_and_get_reply_safe(character_to_use, user_message)\n+    lore_characters = set(context.get(\"characters_in_lore\", []))\n+    reply = send_message_and_get_reply_safe(\n+        character_to_use,\n+        user_message,\n+        characters_in_lore=lore_characters,\n+    )\n     if reply is not None:\n         print_character_reply(character_to_use, reply)\ndiff --git a/commands/chat_with.py b/commands/chat_with.py\nindex 8d2fdeb..9a9e10e 100644\n--- a/commands/chat_with.py\n+++ b/commands/chat_with.py\n@@ -54,11 +54,15 @@ def handle(args, context):\n         \"Type end_chat to return to the main menu.\"\n     )\n \n+    lore_characters = set(context.get(\"characters_in_lore\", []))\n     history = chat_history.get_history(session_id, limit=1)\n     if history:\n         print_recent_history(character_to_use, session_id)\n     else:\n-        greeting = generate_opening_greeting_safe(character_to_use)\n+        greeting = generate_opening_greeting_safe(\n+            character_to_use,\n+            characters_in_lore=lore_characters,\n+        )\n         if greeting is not None:\n             print_character_reply(character_to_use, greeting)\n \n@@ -83,6 +87,10 @@ def handle(args, context):\n             )\n             continue\n \n-        reply = send_message_and_get_reply_safe(character_to_use, user_message)\n+        reply = send_message_and_get_reply_safe(\n+            character_to_use,\n+            user_message,\n+            characters_in_lore=lore_characters,\n+        )\n         if reply is not None:\n             print_character_reply(character_to_use, reply)\ndiff --git a/commands/list_characters.py b/commands/list_characters.py\nindex a95a2b1..57159fe 100644\n--- a/commands/list_characters.py\n+++ b/commands/list_characters.py\n@@ -6,6 +6,9 @@ Displays all character/person names extracted from lore via spaCy NER.\n \"\"\"\n from rich import print as rprint\n \n+import character_aliases\n+\n+\n def handle(args, context):\n     \"\"\"\n     Handles the list_characters CLI command.\n@@ -13,11 +16,26 @@ def handle(args, context):\n         args (list): Command arguments (ignored)\n         context (dict): Shared context dictionary containing 'characters_in_lore'.\n     \"\"\"\n-    characters = context.get('characters_in_lore', set())\n+    characters = set(context.get(\"characters_in_lore\", []))\n+    aliases = character_aliases.get_all()\n+\n     if not characters:\n         rprint(\"[dim]No characters found in lore. Add more lore first![/dim]\")\n         return\n-    rprint(f\"[cyan]Characters mentioned in world lore ([bold]{len(characters)}[/bold]):\")\n-    for c in sorted(characters):\n-        rprint(f\"- [bold]{c}[/bold]\")\n-    rprint(\"[dim]Use chat_to for a quick message, chat_with for a conversation, or reset_chat to clear history.[/dim]\")\n+\n+    effective = character_aliases.build_effective_characters(characters, aliases)\n+    rprint(f\"[cyan]Characters mentioned in world lore ([bold]{len(effective)}[/bold]):\")\n+    for display_name in sorted(effective):\n+        lore_names = [\n+            lore_name\n+            for lore_name in characters\n+            if aliases.get(lore_name, lore_name) == display_name\n+        ]\n+        if len(lore_names) == 1 and lore_names[0] != display_name:\n+            rprint(f\"- [bold]{display_name}[/bold] [dim](lore: {lore_names[0]})[/dim]\")\n+        else:\n+            rprint(f\"- [bold]{display_name}[/bold]\")\n+    rprint(\n+        \"[dim]Use chat_to for a quick message, chat_with for a conversation, \"\n+        \"rename_character to change a display name, or reset_chat to clear history.[/dim]\"\n+    )\ndiff --git a/commands/rename_character.py b/commands/rename_character.py\nnew file mode 100644\nindex 0000000..4cfd5dc\n--- /dev/null\n+++ b/commands/rename_character.py\n@@ -0,0 +1,73 @@\n+\n+\"\"\"\n+commands/rename_character.py\n+\n+Handles the rename_character CLI command to assign a display/chat alias\n+for a character name extracted from lore.\n+\"\"\"\n+from rich import print as rprint\n+\n+import character_aliases\n+import chat_history\n+from cli_utils import print_usage\n+\n+from .chat_common import (\n+    check_lore_service,\n+    parse_two_character_names,\n+)\n+\n+\n+def handle(args, context):\n+    \"\"\"\n+    Handles the rename_character <old_name> <new_name> CLI command.\n+\n+    Maps a lore-extracted name to a preferred display name for chat and listing.\n+    Lore text is unchanged; chat queries use both names for context.\n+    \"\"\"\n+    if not check_lore_service(\"rename_character\"):\n+        return\n+\n+    old_name, new_name, parse_warning = parse_two_character_names(args)\n+    if parse_warning:\n+        rprint(parse_warning)\n+    if not old_name or not new_name:\n+        print_usage(\"rename_character <old_name> <new_name>\", style=\"red\")\n+        return\n+\n+    if old_name.strip().lower() == new_name.strip().lower():\n+        rprint(\"[yellow]Old and new names are the same; nothing to change.\")\n+        return\n+\n+    characters_in_lore = set(context.get(\"characters_in_lore\", []))\n+    aliases = character_aliases.get_all()\n+\n+    lore_name = character_aliases.find_lore_name(old_name, characters_in_lore, aliases)\n+    if not lore_name:\n+        rprint(f\"[red]Character '{old_name}' is not mentioned in any world lore.\")\n+        rprint(\"Use 'list_characters' to see known characters.\")\n+        return\n+\n+    current_display = aliases.get(lore_name, lore_name)\n+    if (\n+        new_name in characters_in_lore\n+        and new_name != lore_name\n+        and character_aliases.get_display_name(new_name, aliases) == new_name\n+    ):\n+        rprint(\n+            f\"[red]Cannot rename to '{new_name}': that name already refers to a different \"\n+            \"character in lore.\"\n+        )\n+        return\n+\n+    character_aliases.set_alias(lore_name, new_name)\n+\n+    for session_name in dict.fromkeys([lore_name, current_display]):\n+        chat_history.rename_session_character(session_name, new_name)\n+\n+    if lore_name != new_name:\n+        rprint(\n+            f\"[green]Renamed {lore_name} → {new_name} for chat. \"\n+            \"Lore text is unchanged; both names are used for context.\"\n+        )\n+    else:\n+        rprint(f\"[green]Character chat name set to {new_name}.\")\ndiff --git a/help.py b/help.py\nindex 3249aa5..3304fe1 100644\n--- a/help.py\n+++ b/help.py\n@@ -23,6 +23,7 @@ CHAR_COMMANDS = [\n     \"chat_to\",\n     \"chat_with\",\n     \"reset_chat\",\n+    \"rename_character\",\n     \"list_characters\",\n ]\n SYSTEM_COMMANDS = [\"help\", \"exit\"]\n@@ -136,12 +137,26 @@ COMMAND_HELP = {\n             'reset_chat \"The Mage of the Lake\"',\n         ],\n     },\n+    \"rename_character\": {\n+        \"summary\": \"Set a display name for a lore-extracted character\",\n+        \"usage\": \"rename_character <old_name> <new_name>\",\n+        \"description\": (\n+            \"Assign a preferred chat and list name for a character found in lore. \"\n+            \"Lore text is not changed; both the lore name and display name are used \"\n+            \"when retrieving context for chat. Existing chat history is kept under the new name.\"\n+        ),\n+        \"examples\": [\n+            \"rename_character Warlord Valeria\",\n+            'rename_character \"The Warlord\" Valeria',\n+        ],\n+    },\n     \"list_characters\": {\n         \"summary\": \"List characters found in lore\",\n         \"usage\": \"list_characters\",\n         \"description\": (\n             \"Show person names extracted from all saved lore using spaCy NER. \"\n-            \"Use chat_to for a single message, chat_with for a conversation, or reset_chat to clear history.\"\n+            \"Use chat_to for a single message, chat_with for a conversation, \"\n+            \"rename_character to change a display name, or reset_chat to clear history.\"\n         ),\n         \"examples\": [\n             \"list_characters\",\ndiff --git a/tests/test_character_aliases.py b/tests/test_character_aliases.py\nnew file mode 100644\nindex 0000000..8649ad8\n--- /dev/null\n+++ b/tests/test_character_aliases.py\n@@ -0,0 +1,69 @@\n+\"\"\"Tests for character alias persistence and resolution.\"\"\"\n+import pytest\n+\n+from character_aliases import CharacterAliasService\n+\n+\n+@pytest.fixture\n+def alias_service(tmp_path):\n+    service = CharacterAliasService(db_file=str(tmp_path / \"aliases.db\"))\n+    service.initialize_db()\n+    return service\n+\n+\n+def test_set_alias_and_get_all(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    assert alias_service.get_all() == {\"Warlord\": \"Valeria\"}\n+\n+\n+def test_build_effective_characters_applies_aliases(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    effective = alias_service.build_effective_characters({\"Warlord\", \"Mara\"})\n+\n+    assert effective == {\"Valeria\", \"Mara\"}\n+\n+\n+def test_lore_search_terms_includes_both_names(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    terms = alias_service.lore_search_terms(\"Valeria\", {\"Warlord\", \"Mara\"})\n+\n+    assert terms == [\"Valeria\", \"Warlord\"]\n+\n+\n+def test_resolve_display_name_from_lore_name(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    display_name, _ = alias_service.resolve_display_name(\n+        \"Warlord\",\n+        {\"Warlord\"},\n+        alias_service.get_all(),\n+    )\n+\n+    assert display_name == \"Valeria\"\n+\n+\n+def test_resolve_display_name_from_display_name(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    display_name, _ = alias_service.resolve_display_name(\n+        \"Valeria\",\n+        {\"Warlord\"},\n+        alias_service.get_all(),\n+    )\n+\n+    assert display_name == \"Valeria\"\n+\n+\n+def test_find_lore_name_from_display_name(alias_service):\n+    alias_service.set_alias(\"Warlord\", \"Valeria\")\n+\n+    lore_name = alias_service.find_lore_name(\n+        \"Valeria\",\n+        {\"Warlord\"},\n+        alias_service.get_all(),\n+    )\n+\n+    assert lore_name == \"Warlord\"\ndiff --git a/tests/test_chat_common.py b/tests/test_chat_common.py\nnew file mode 100644\nindex 0000000..81fe903\n--- /dev/null\n+++ b/tests/test_chat_common.py\n@@ -0,0 +1,27 @@\n+\"\"\"Tests for shared chat helper functions.\"\"\"\n+import importlib\n+\n+import character_aliases\n+\n+\n+def test_build_lore_query_includes_lore_and_display_names(monkeypatch):\n+    chat_common = importlib.import_module(\"commands.chat_common\")\n+\n+    monkeypatch.setattr(\n+        character_aliases,\n+        \"get_all\",\n+        lambda: {\"Warlord\": \"Valeria\"},\n+    )\n+    monkeypatch.setattr(\n+        character_aliases,\n+        \"lore_search_terms\",\n+        lambda display_name, characters_in_lore, aliases=None: [\"Valeria\", \"Warlord\"],\n+    )\n+\n+    query = chat_common.build_lore_query(\n+        \"Valeria\",\n+        \"Who rules?\",\n+        {\"Warlord\"},\n+    )\n+\n+    assert query == \"Valeria Warlord Who rules?\"\ndiff --git a/tests/test_chat_history.py b/tests/test_chat_history.py\nindex d01d843..0ee5580 100644\n--- a/tests/test_chat_history.py\n+++ b/tests/test_chat_history.py\n@@ -33,6 +33,19 @@ def test_add_message_and_get_history(chat_service):\n     ]\n \n \n+def test_rename_session_character_updates_session_key(chat_service):\n+    session_id = chat_service.get_or_create_session(\"Warlord\")\n+    chat_service.add_message(session_id, \"user\", \"Hello\")\n+\n+    updated = chat_service.rename_session_character(\"Warlord\", \"Valeria\")\n+\n+    assert updated == 1\n+    assert chat_service.list_sessions(\"Warlord\") == []\n+    sessions = chat_service.list_sessions(\"Valeria\")\n+    assert len(sessions) == 1\n+    assert sessions[0][0] == session_id\n+\n+\n def test_reset_history_clears_messages_but_keeps_session(chat_service):\n     session_id = chat_service.get_or_create_session(\"Mara\")\n     chat_service.add_message(session_id, \"user\", \"Hello\")\ndiff --git a/tests/test_chat_with.py b/tests/test_chat_with.py\nindex 4785542..ab1e0c8 100644\n--- a/tests/test_chat_with.py\n+++ b/tests/test_chat_with.py\n@@ -34,12 +34,12 @@ def test_chat_with_enters_loop_and_exits_on_end_chat(\n     monkeypatch.setattr(\n         chat_with,\n         \"generate_opening_greeting_safe\",\n-        lambda character: \"Hello, traveler.\",\n+        lambda character, **kwargs: \"Hello, traveler.\",\n     )\n     monkeypatch.setattr(\n         chat_with,\n         \"send_message_and_get_reply_safe\",\n-        lambda character, message: f\"Reply to: {message}\",\n+        lambda character, message, **kwargs: f\"Reply to: {message}\",\n     )\n \n     prompts = iter([\"Hello there\", \"end_chat\"])\n@@ -74,7 +74,7 @@ def test_chat_with_supports_multi_word_character_names(\n         lambda character: captured.setdefault(\"character\", character) or 1,\n     )\n     monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n-    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character: \"Greetings.\")\n+    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character, **kwargs: \"Greetings.\")\n     monkeypatch.setattr(\n         chat_with,\n         \"PromptSession\",\n@@ -107,7 +107,7 @@ def test_chat_with_shows_recent_history(initialized_lore, capture_rprint, monkey\n     monkeypatch.setattr(\n         chat_with,\n         \"generate_opening_greeting_safe\",\n-        lambda character: \"Should not be called\",\n+        lambda character, **kwargs: \"Should not be called\",\n     )\n     monkeypatch.setattr(\n         chat_with,\n@@ -136,7 +136,7 @@ def test_chat_with_generates_greeting_for_new_session(\n     monkeypatch.setattr(\n         chat_with,\n         \"generate_opening_greeting_safe\",\n-        lambda character: \"Welcome back to the lake.\",\n+        lambda character, **kwargs: \"Welcome back to the lake.\",\n     )\n     monkeypatch.setattr(\n         chat_with,\n@@ -158,7 +158,7 @@ def test_chat_with_help_inside_loop(initialized_lore, capture_rprint, monkeypatc\n \n     monkeypatch.setattr(chat_common.chat_history, \"get_or_create_session\", lambda character: 1)\n     monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n-    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character: None)\n+    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character, **kwargs: None)\n     prompts = iter([\"help\", \"end_chat\"])\n     monkeypatch.setattr(\n         chat_with,\ndiff --git a/tests/test_rename_character.py b/tests/test_rename_character.py\nnew file mode 100644\nindex 0000000..4032dac\n--- /dev/null\n+++ b/tests/test_rename_character.py\n@@ -0,0 +1,99 @@\n+\"\"\"Tests for rename_character command handler.\"\"\"\n+import importlib\n+\n+import character_aliases\n+import chat_history\n+\n+\n+def _rename_character_module():\n+    return importlib.import_module(\"commands.rename_character\")\n+\n+\n+def test_rename_character_requires_two_names(initialized_lore, capture_rprint):\n+    capture, buffer = capture_rprint\n+    rename_character = _rename_character_module()\n+    capture(rename_character)\n+\n+    rename_character.handle([\"Warlord\"], initialized_lore[\"context\"])\n+\n+    assert \"Usage: rename_character\" in buffer.getvalue()\n+\n+\n+def test_rename_character_sets_alias_and_migrates_session(\n+    initialized_lore, capture_rprint, monkeypatch, tmp_path\n+):\n+    capture, buffer = capture_rprint\n+    rename_character = _rename_character_module()\n+    capture(rename_character)\n+\n+    db_file = str(tmp_path / \"chat.db\")\n+    alias_service = character_aliases.CharacterAliasService(db_file=db_file)\n+    alias_service.initialize_db()\n+    chat_service = chat_history.ChatHistoryService(db_file=db_file)\n+    chat_service.initialize_db()\n+    alias_service.initialize_db()\n+\n+    session_id = chat_service.get_or_create_session(\"Warlord\")\n+    chat_service.add_message(session_id, \"user\", \"Hello\")\n+\n+    monkeypatch.setattr(character_aliases, \"_alias_service\", alias_service)\n+    monkeypatch.setattr(character_aliases, \"set_alias\", alias_service.set_alias)\n+    monkeypatch.setattr(character_aliases, \"get_all\", alias_service.get_all)\n+    monkeypatch.setattr(chat_history, \"_chat_history_service\", chat_service)\n+    monkeypatch.setattr(\n+        chat_history,\n+        \"rename_session_character\",\n+        chat_service.rename_session_character,\n+    )\n+\n+    context = {\"characters_in_lore\": {\"Warlord\"}}\n+    rename_character.handle([\"Warlord\", \"Valeria\"], context)\n+\n+    output = buffer.getvalue()\n+    assert \"Warlord → Valeria\" in output\n+    assert alias_service.get_all() == {\"Warlord\": \"Valeria\"}\n+\n+    sessions = chat_service.list_sessions(\"Valeria\")\n+    assert len(sessions) == 1\n+    assert chat_service.get_history(sessions[0][0]) == [(\"user\", \"Hello\")]\n+\n+\n+def test_rename_character_rejects_unknown_character(\n+    initialized_lore, capture_rprint, monkeypatch, tmp_path\n+):\n+    capture, buffer = capture_rprint\n+    rename_character = _rename_character_module()\n+    capture(rename_character)\n+\n+    db_file = str(tmp_path / \"chat.db\")\n+    alias_service = character_aliases.CharacterAliasService(db_file=db_file)\n+    alias_service.initialize_db()\n+    monkeypatch.setattr(character_aliases, \"_alias_service\", alias_service)\n+    monkeypatch.setattr(character_aliases, \"get_all\", alias_service.get_all)\n+\n+    rename_character.handle([\"Unknown\", \"Valeria\"], {\"characters_in_lore\": {\"Warlord\"}})\n+\n+    assert \"not mentioned in any world lore\" in buffer.getvalue()\n+\n+\n+def test_list_characters_shows_alias_with_lore_hint(capture_rprint, monkeypatch):\n+    capture, buffer = capture_rprint\n+    list_characters = importlib.import_module(\"commands.list_characters\")\n+    capture(list_characters)\n+\n+    monkeypatch.setattr(\n+        character_aliases,\n+        \"get_all\",\n+        lambda: {\"Warlord\": \"Valeria\"},\n+    )\n+    monkeypatch.setattr(\n+        character_aliases,\n+        \"build_effective_characters\",\n+        lambda characters, aliases=None: {\"Valeria\"},\n+    )\n+\n+    list_characters.handle([], {\"characters_in_lore\": {\"Warlord\"}})\n+\n+    output = buffer.getvalue()\n+    assert \"Valeria\" in output\n+    assert \"lore: Warlord\" in output\n",
+        "stats": {
+          "deletions": 34,
+          "files": [
+            {
+              "additions": 2,
+              "deletions": 1,
+              "path": "INSTRUCTIONS.md",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 2,
+              "deletions": 0,
+              "path": "bootstrap.py",
+              "status": "M"
+            },
+            {
+              "additions": 218,
+              "deletions": 0,
+              "path": "character_aliases.py",
+              "status": "A"
+            },
+            {
+              "additions": 24,
+              "deletions": 1,
+              "path": "chat_history.py",
+              "status": "M"
+            },
+            {
+              "additions": 2,
+              "deletions": 0,
+              "path": "commands/__init__.py",
+              "status": "M"
+            },
+            {
+              "additions": 113,
+              "deletions": 16,
+              "path": "commands/chat_common.py",
+              "status": "M"
+            },
+            {
+              "additions": 6,
+              "deletions": 1,
+              "path": "commands/chat_to.py",
+              "status": "M"
+            },
+            {
+              "additions": 10,
+              "deletions": 2,
+              "path": "commands/chat_with.py",
+              "status": "M"
+            },
+            {
+              "additions": 23,
+              "deletions": 5,
+              "path": "commands/list_characters.py",
+              "status": "M"
+            },
+            {
+              "additions": 73,
+              "deletions": 0,
+              "path": "commands/rename_character.py",
+              "status": "A"
+            },
+            {
+              "additions": 16,
+              "deletions": 1,
+              "path": "help.py",
+              "status": "M"
+            },
+            {
+              "additions": 69,
+              "deletions": 0,
+              "path": "tests/test_character_aliases.py",
+              "status": "A"
+            },
+            {
+              "additions": 27,
+              "deletions": 0,
+              "path": "tests/test_chat_common.py",
+              "status": "A"
+            },
+            {
+              "additions": 13,
+              "deletions": 0,
+              "path": "tests/test_chat_history.py",
+              "status": "M"
+            },
+            {
+              "additions": 6,
+              "deletions": 6,
+              "path": "tests/test_chat_with.py",
+              "status": "M"
+            },
+            {
+              "additions": 99,
+              "deletions": 0,
+              "path": "tests/test_rename_character.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 17,
+          "insertions": 704
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": true,
+      "sha": "d3b4dc0e860764876e46788c170afd645526c09e",
+      "short_sha": "d3b4dc0",
+      "subject": "Add Character Aliases For Lore Chat",
+      "summary": ""
+    },
+    {
+      "authored_at": "2026-08-23T17:25:23-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Usage hints and help text now render command syntax\nverbatim instead of being treated as Rich markup. This\nprevents placeholders like `<lore_text>` and\n`[command]` from disappearing or changing appearance\nin command help, chat command validation, and lore\nusage messages.\n\nThe shared CLI helpers centralize literal rendering so\nusage strings stay consistent across commands and the\ntests now cover the preserved bracketed syntax.\n",
+        "patch": "diff --git a/cli_utils.py b/cli_utils.py\nindex 762c172..45f406b 100644\n--- a/cli_utils.py\n+++ b/cli_utils.py\n@@ -1,7 +1,31 @@\n \"\"\"\n cli_utils.py - Consistent CLI output helpers for LoreBuilder.\n \"\"\"\n+from typing import Optional\n+\n from rich import print as rprint\n+from rich.text import Text\n+\n+\n+def print_literal(text: str, style: Optional[str] = None, *, prefix: str = \"\") -> None:\n+    \"\"\"Print text without interpreting Rich markup in the string.\"\"\"\n+    rprint(Text(prefix + text, style=style))\n+\n+\n+def print_usage(\n+    usage: str,\n+    *,\n+    prefix: str = \"Usage:\",\n+    style: str = \"cyan\",\n+    leading_newline: bool = False,\n+) -> None:\n+    \"\"\"Print a usage line; angle brackets and square brackets are shown literally.\"\"\"\n+    parts = []\n+    if leading_newline:\n+        parts.append((\"\\n\", None))\n+    parts.extend([(f\"{prefix} \", style), (usage, None)])\n+    rprint(Text.assemble(*parts))\n+\n \n def cli_error(msg: str):\n     \"\"\"Display an error message (red, with [ERROR] prefix).\"\"\"\ndiff --git a/commands/chat_common.py b/commands/chat_common.py\nindex 1c944a0..23f1f09 100644\n--- a/commands/chat_common.py\n+++ b/commands/chat_common.py\n@@ -63,7 +63,7 @@ def parse_character_and_message(args: List[str]) -> Tuple[Optional[str], Optiona\n         (character_name, user_message, error_or_warning)\n     \"\"\"\n     if not args or len(args) < 2:\n-        return None, None, \"[red]Usage: chat_to <character_name> <user_message>\"\n+        return None, None, None\n \n     first_arg = args[0]\n     if first_arg.startswith('\"') or first_arg.startswith(\"'\"):\ndiff --git a/commands/chat_to.py b/commands/chat_to.py\nindex 0eb17cc..5d0d61a 100644\n--- a/commands/chat_to.py\n+++ b/commands/chat_to.py\n@@ -6,6 +6,8 @@ Handles the chat_to CLI command for LoreBuilder.\n \"\"\"\n from rich import print as rprint\n \n+from cli_utils import print_usage\n+\n from .chat_common import (\n     check_lore_service,\n     parse_character_and_message,\n@@ -26,7 +28,7 @@ def handle(args, context):\n     if parse_error:\n         rprint(parse_error)\n     if not character_name or not user_message:\n-        rprint(\"[red]Usage: chat_to <character_name> <user_message>\")\n+        print_usage(\"chat_to <character_name> <user_message>\", style=\"red\")\n         return\n \n     character_to_use = resolve_character(\ndiff --git a/commands/chat_with.py b/commands/chat_with.py\nindex ab535e0..8d2fdeb 100644\n--- a/commands/chat_with.py\n+++ b/commands/chat_with.py\n@@ -7,6 +7,8 @@ Handles the chat_with CLI command for multi-turn character conversations.\n from rich import print as rprint\n from prompt_toolkit import PromptSession\n \n+from cli_utils import print_usage\n+\n from .chat_common import (\n     check_lore_service,\n     generate_opening_greeting_safe,\n@@ -36,7 +38,7 @@ def handle(args, context):\n     if parse_warning:\n         rprint(parse_warning)\n     if not character_name:\n-        rprint(\"[red]Usage: chat_with <character_name>\")\n+        print_usage(\"chat_with <character_name>\", style=\"red\")\n         return\n \n     character_to_use = resolve_character(\ndiff --git a/commands/reset_chat.py b/commands/reset_chat.py\nindex 08a0404..2ceef8a 100644\n--- a/commands/reset_chat.py\n+++ b/commands/reset_chat.py\n@@ -6,6 +6,8 @@ Handles the reset_chat CLI command to clear a character's conversation history.\n \"\"\"\n from rich import print as rprint\n \n+from cli_utils import print_usage\n+\n import chat_history\n from .chat_common import check_lore_service, parse_character_from_args, resolve_character\n \n@@ -23,7 +25,7 @@ def handle(args, context):\n     if parse_warning:\n         rprint(parse_warning)\n     if not character_name:\n-        rprint(\"[red]Usage: reset_chat <character_name>\")\n+        print_usage(\"reset_chat <character_name>\", style=\"red\")\n         return\n \n     character_to_use = resolve_character(\ndiff --git a/constants.py b/constants.py\nindex 8a1b24d..1f6bb15 100644\n--- a/constants.py\n+++ b/constants.py\n@@ -76,11 +76,11 @@ WARNING_NO_LORE_FOUND = \"[dim]No relevant lore found.\"\n INFO_NO_EXISTING_LORE = \"[dim]No lore entries found in the system.\"\n LORE_MODULE_INITIALIZED = \"[dim]Lore module initialized.[/dim]\"\n \n-# Usage messages\n-USAGE_ADD_LORE = \"[yellow]Usage: add_lore <lore_text>\"\n-USAGE_GENERATE_LORE = \"[yellow]Usage: generate_lore <user_prompt>\"\n-USAGE_QUERY_LORE = \"[yellow]Usage: query_lore <query>\"\n-USAGE_DELETE_LORE = \"[yellow]Usage: delete_lore <lore_id>\"\n+# Usage messages (plain text; use cli_utils.print_usage when displaying)\n+USAGE_ADD_LORE = \"add_lore <lore_text>\"\n+USAGE_GENERATE_LORE = \"generate_lore <user_prompt>\"\n+USAGE_QUERY_LORE = \"query_lore <query>\"\n+USAGE_DELETE_LORE = \"delete_lore <lore_id>\"\n \n # System prompts and templates\n DEFAULT_LORE_SYSTEM_PROMPT = \"You are a creative worldbuilder.\"\ndiff --git a/help.py b/help.py\nindex a67f77e..3249aa5 100644\n--- a/help.py\n+++ b/help.py\n@@ -2,6 +2,7 @@\n help.py - Banner and command/help menu utilities for CLI\n \"\"\"\n from rich import print as rprint\n+from cli_utils import print_literal, print_usage\n from rich.text import Text\n \n BANNER = (\n@@ -206,7 +207,7 @@ def print_command_menu(commands_registry=None):\n             continue\n         rprint(f\"[cyan]{category}:[/cyan]\")\n         for line in lines:\n-            rprint(f\"  [white]{line}[/white]\")\n+            print_literal(line, style=\"white\", prefix=\"  \")\n \n     rprint(Text(\"Type 'help <command>' for details. Example: help add_lore\", style=\"dim\"))\n \n@@ -231,7 +232,7 @@ def print_command_help(command: str, commands_registry=None):\n         return\n \n     rprint(f\"[bold cyan]{command}[/bold cyan] — {help_info['summary']}\")\n-    rprint(f\"\\n[cyan]Usage:[/cyan] {help_info['usage']}\")\n+    print_usage(help_info[\"usage\"], leading_newline=True)\n \n     description = help_info.get(\"description\")\n     if description:\ndiff --git a/lore.py b/lore.py\nindex 0794b10..83bfb00 100644\n--- a/lore.py\n+++ b/lore.py\n@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Any, Union\n from rich import print as rprint\n import litellm\n from datetime import datetime\n+from cli_utils import print_usage\n from llm_utils import extract_completion_text\n from constants import (\n     MIN_LORE_ID,\n@@ -112,7 +113,7 @@ class LoreService:\n             context: Shared context dictionary\n         \"\"\"\n         if not args:\n-            rprint(USAGE_ADD_LORE)\n+            print_usage(USAGE_ADD_LORE, style=\"yellow\")\n             return\n         \n         lore_text = \" \".join(args)\n@@ -143,7 +144,7 @@ class LoreService:\n             context: Shared context dictionary\n         \"\"\"\n         if not args:\n-            rprint(USAGE_GENERATE_LORE)\n+            print_usage(USAGE_GENERATE_LORE, style=\"yellow\")\n             return\n         \n         prompt = \" \".join(args)\n@@ -234,7 +235,7 @@ class LoreService:\n             context: Shared context dictionary\n         \"\"\"\n         if not args:\n-            rprint(USAGE_QUERY_LORE)\n+            print_usage(USAGE_QUERY_LORE, style=\"yellow\")\n             return\n         \n         query = \" \".join(args)\n@@ -286,7 +287,7 @@ class LoreService:\n             context: Shared context dictionary\n         \"\"\"\n         if not args:\n-            rprint(USAGE_DELETE_LORE)\n+            print_usage(USAGE_DELETE_LORE, style=\"yellow\")\n             return\n             \n         lore_id = args[0]\ndiff --git a/tests/conftest.py b/tests/conftest.py\nindex 97e4a85..98b218e 100644\n--- a/tests/conftest.py\n+++ b/tests/conftest.py\n@@ -23,6 +23,10 @@ def capture_rprint(monkeypatch):\n         highlight=False,\n     )\n \n+    import cli_utils\n+\n+    monkeypatch.setattr(cli_utils, \"rprint\", console.print)\n+\n     def _capture(module):\n         monkeypatch.setattr(module, \"rprint\", console.print)\n         return buffer\ndiff --git a/tests/test_cli_utils.py b/tests/test_cli_utils.py\nnew file mode 100644\nindex 0000000..29514a5\n--- /dev/null\n+++ b/tests/test_cli_utils.py\n@@ -0,0 +1,22 @@\n+\"\"\"Tests for CLI output helpers.\"\"\"\n+import cli_utils\n+\n+\n+def test_print_usage_shows_literal_angle_brackets(capture_rprint):\n+    capture, buffer = capture_rprint\n+    capture(cli_utils)\n+\n+    cli_utils.print_usage(\"add_lore <lore_text>\", style=\"yellow\")\n+    output = buffer.getvalue()\n+\n+    assert \"Usage: add_lore <lore_text>\" in output\n+\n+\n+def test_print_literal_shows_square_brackets(capture_rprint):\n+    capture, buffer = capture_rprint\n+    capture(cli_utils)\n+\n+    cli_utils.print_literal(\"help [command]\", style=\"white\", prefix=\"  \")\n+    output = buffer.getvalue()\n+\n+    assert \"help [command]\" in output\ndiff --git a/tests/test_help.py b/tests/test_help.py\nindex a3c4bbb..916dc01 100644\n--- a/tests/test_help.py\n+++ b/tests/test_help.py\n@@ -37,6 +37,26 @@ def test_print_command_help_unknown_command(capture_rprint):\n     assert \"No such command\" in output\n \n \n+def test_print_command_help_shows_literal_placeholders(capture_rprint):\n+    capture, buffer = capture_rprint\n+    capture(help_module)\n+\n+    help_module.print_command_help(\"add_lore\", COMMANDS_REGISTRY)\n+    output = buffer.getvalue()\n+\n+    assert \"add_lore <lore_text>\" in output\n+\n+\n+def test_print_command_menu_shows_bracketed_help_usage(capture_rprint):\n+    capture, buffer = capture_rprint\n+    capture(help_module)\n+\n+    help_module.print_command_menu(COMMANDS_REGISTRY)\n+    output = buffer.getvalue()\n+\n+    assert \"help [command]\" in output\n+\n+\n def test_print_command_menu_lists_registered_commands(capture_rprint):\n     capture, buffer = capture_rprint\n     capture(help_module)\n",
+        "stats": {
+          "deletions": 15,
+          "files": [
+            {
+              "additions": 24,
+              "deletions": 0,
+              "path": "cli_utils.py",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "commands/chat_common.py",
+              "status": "M"
+            },
+            {
+              "additions": 3,
+              "deletions": 1,
+              "path": "commands/chat_to.py",
+              "status": "M"
+            },
+            {
+              "additions": 3,
+              "deletions": 1,
+              "path": "commands/chat_with.py",
+              "status": "M"
+            },
+            {
+              "additions": 3,
+              "deletions": 1,
+              "path": "commands/reset_chat.py",
+              "status": "M"
+            },
+            {
+              "additions": 5,
+              "deletions": 5,
+              "path": "constants.py",
+              "status": "M"
+            },
+            {
+              "additions": 3,
+              "deletions": 2,
+              "path": "help.py",
+              "status": "M"
+            },
+            {
+              "additions": 5,
+              "deletions": 4,
+              "path": "lore.py",
+              "status": "M"
+            },
+            {
+              "additions": 4,
+              "deletions": 0,
+              "path": "tests/conftest.py",
+              "status": "M"
+            },
+            {
+              "additions": 22,
+              "deletions": 0,
+              "path": "tests/test_cli_utils.py",
+              "status": "A"
+            },
+            {
+              "additions": 20,
+              "deletions": 0,
+              "path": "tests/test_help.py",
+              "status": "M"
+            }
+          ],
+          "files_changed": 11,
+          "insertions": 93
+        },
+        "truncated": false
+      },
+      "features": [
+        "Literal placeholder text in usage messages",
+        "Literal bracketed text in command help menus",
+        "Consistent styled usage output across CLI commands",
+        "Corrected chat, reset, lore, and help usage displays"
+      ],
+      "is_head": false,
+      "sha": "d88b828a6d36cbf8d2d4a028b1e8dfbe58695ee9",
+      "short_sha": "d88b828",
+      "subject": "Fix Literal CLI Usage Output",
+      "summary": "CLI usage and help output now displays angle-bracket and square-bracket placeholders as literal text instead of interpreting them as Rich markup. Shared output helpers are used across command errors, lore commands, and help menus, with coverage added for the corrected rendering."
+    },
+    {
+      "authored_at": "2026-08-23T17:21:21-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Pin LiteLLM to the current tested release so dependency\nresolution stays predictable across installs.\n\nAdd the workflow test badge to the README so the\nproject status is visible from the main documentation.\n",
+        "patch": "diff --git a/README.md b/README.md\nindex 7b7aa57..32049b3 100644\n--- a/README.md\n+++ b/README.md\n@@ -4,6 +4,7 @@\n > **A modular, persistent CLI for world-building and replayable, context-rich character conversations powered by LLMs, ChromaDB, and NLP.**\n \n [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)\n+[![Tests](https://github.com/rdegraci/lorebuilder-cli/actions/workflows/test.yml/badge.svg)](https://github.com/rdegraci/lorebuilder-cli/actions/workflows/test.yml)\n ![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)\n \n ---\ndiff --git a/requirements.txt b/requirements.txt\nindex 349cd0d..a3cb00f 100644\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -1,6 +1,6 @@\n \n rich==14.0.0\n-litellm>=1.74.15\n+litellm==1.98.0\n chromadb==1.0.10\n sentence_transformers==4.1.0\n prompt_toolkit==3.0.51\n",
+        "stats": {
+          "deletions": 1,
+          "files": [
+            {
+              "additions": 1,
+              "deletions": 0,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "requirements.txt",
+              "status": "M"
+            }
+          ],
+          "files_changed": 2,
+          "insertions": 2
+        },
+        "truncated": false
+      },
+      "features": [
+        "LiteLLM upgraded and pinned to 1.98.0",
+        "README now displays the automated test workflow status"
+      ],
+      "is_head": false,
+      "sha": "208b4515bd5bacd2f4491ab7bb136e150673dcee",
+      "short_sha": "208b451",
+      "subject": "Upgrade litellm to 1.98.0",
+      "summary": "Pins LiteLLM to version 1.98.0 and adds a CI test-status badge to the project README."
+    },
+    {
+      "authored_at": "2026-08-23T17:19:40-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Add a reset_chat command that clears a character's saved conversation\nhistory while leaving the session available for future chats.\n\nchat_with now starts new conversations with an in-character greeting and\nshows recent history only when a character already has saved messages.\n\nUpdate the help text, README, and instructions to document the new\ncommand and the revised chat_with behavior.\n",
+        "patch": "diff --git a/INSTRUCTIONS.md b/INSTRUCTIONS.md\nindex 297f85e..614c14d 100644\n--- a/INSTRUCTIONS.md\n+++ b/INSTRUCTIONS.md\n@@ -74,12 +74,14 @@ Send a single message with `chat_to`, or start a multi-turn session with `chat_w\n ```bash\n chat_to Mara Who rules Ardelune?\n chat_with Mara\n+Mara>> Greetings, traveler. What brings you here?\n You>> Who rules Ardelune?\n Mara>> The council of scholars holds power in Ardelune.\n You>> end_chat\n+reset_chat Mara\n ```\n \n-Conversation history is saved per character. Type `end_chat` to leave a `chat_with` session.\n+Conversation history is saved per character. Type `end_chat` to leave a `chat_with` session. Use `reset_chat` to clear a character's history and start fresh.\n \n ---\n \ndiff --git a/README.md b/README.md\nindex 56df29c..7b7aa57 100644\n--- a/README.md\n+++ b/README.md\n@@ -38,7 +38,7 @@ On first run, `app.yaml` and `.env` are created automatically from the example f\n - Type `help` or `help <command>` inside the CLI.\n - Example command categories:\n   - **Lore:** `add_lore`, `generate_lore`, `store_generated_lore`, `query_lore`, `list_all_lore`, `delete_lore`\n-  - **Characters:** `chat_to`, `chat_with`, `list_characters`\n+  - **Characters:** `chat_to`, `chat_with`, `reset_chat`, `list_characters`\n   - **System:** `help`, `exit`\n \n ---\ndiff --git a/commands/__init__.py b/commands/__init__.py\nindex dae2bbd..db920d2 100644\n--- a/commands/__init__.py\n+++ b/commands/__init__.py\n@@ -9,6 +9,7 @@ from .generate_lore import handle as generate_lore\n from .store_generated_lore import handle as store_generated_lore\n from .chat_to import handle as chat_to\n from .chat_with import handle as chat_with\n+from .reset_chat import handle as reset_chat\n from .list_characters import handle as list_characters\n \n # Import handlers directly from the modules\n@@ -21,6 +22,7 @@ COMMANDS_REGISTRY = {\n     \"store_generated_lore\": store_generated_lore,\n     \"chat_to\": chat_to,\n     \"chat_with\": chat_with,\n+    \"reset_chat\": reset_chat,\n     \"list_characters\": list_characters,\n \n     # Commands from lore.py\ndiff --git a/commands/chat_common.py b/commands/chat_common.py\nindex fa6d88d..1c944a0 100644\n--- a/commands/chat_common.py\n+++ b/commands/chat_common.py\n@@ -189,3 +189,58 @@ def send_message_and_get_reply_safe(character_name: str, user_message: str) -> O\n         traceback.print_exc()\n         rprint(f\"[red]Error during LLM chat: {str(e)}\")\n         return None\n+\n+\n+def generate_opening_greeting(character_name: str) -> Optional[str]:\n+    \"\"\"\n+    Generate an in-character greeting when starting a new conversation.\n+\n+    Returns None if the character already has message history.\n+    \"\"\"\n+    session_id = chat_history.get_or_create_session(character_name)\n+    if chat_history.get_history(session_id, limit=1):\n+        return None\n+\n+    relevant_lore = lore.query_lore_internal(character_name, 3)\n+    context_str = (\n+        \"\\n\\n\".join(relevant_lore)\n+        if relevant_lore\n+        else \"No specific lore found for this character.\"\n+    )\n+\n+    llm_messages = [\n+        {\n+            \"role\": \"system\",\n+            \"content\": lore._lore_service.config.get(\"chat_prompt_template\", \"\")\n+            .replace(\"{character_name}\", character_name)\n+            .replace(\"{context}\", context_str),\n+        },\n+        {\n+            \"role\": \"user\",\n+            \"content\": (\n+                \"The user has just entered to speak with you. \"\n+                \"Greet them briefly in character and invite them to talk.\"\n+            ),\n+        },\n+    ]\n+\n+    response = litellm.completion(\n+        model=lore._lore_service.config.get(\"llm_provider\", \"openai/gpt-4o-mini\"),\n+        messages=llm_messages,\n+        api_key=lore._lore_service.llm_api_key,\n+        max_tokens=512,\n+    )\n+\n+    reply = extract_completion_text(response)\n+    chat_history.add_message(session_id, \"character\", reply)\n+    return reply\n+\n+\n+def generate_opening_greeting_safe(character_name: str) -> Optional[str]:\n+    \"\"\"Call generate_opening_greeting and print errors instead of raising.\"\"\"\n+    try:\n+        return generate_opening_greeting(character_name)\n+    except Exception as e:\n+        traceback.print_exc()\n+        rprint(f\"[red]Error generating greeting: {str(e)}\")\n+        return None\ndiff --git a/commands/chat_with.py b/commands/chat_with.py\nindex d0ca5df..ab535e0 100644\n--- a/commands/chat_with.py\n+++ b/commands/chat_with.py\n@@ -9,6 +9,7 @@ from prompt_toolkit import PromptSession\n \n from .chat_common import (\n     check_lore_service,\n+    generate_opening_greeting_safe,\n     parse_character_from_args,\n     print_character_reply,\n     print_recent_history,\n@@ -50,7 +51,14 @@ def handle(args, context):\n         f\"Chatting with {character_to_use}. \"\n         \"Type end_chat to return to the main menu.\"\n     )\n-    print_recent_history(character_to_use, session_id)\n+\n+    history = chat_history.get_history(session_id, limit=1)\n+    if history:\n+        print_recent_history(character_to_use, session_id)\n+    else:\n+        greeting = generate_opening_greeting_safe(character_to_use)\n+        if greeting is not None:\n+            print_character_reply(character_to_use, greeting)\n \n     session = PromptSession()\n     while True:\ndiff --git a/commands/list_characters.py b/commands/list_characters.py\nindex 2911ae6..a95a2b1 100644\n--- a/commands/list_characters.py\n+++ b/commands/list_characters.py\n@@ -20,4 +20,4 @@ def handle(args, context):\n     rprint(f\"[cyan]Characters mentioned in world lore ([bold]{len(characters)}[/bold]):\")\n     for c in sorted(characters):\n         rprint(f\"- [bold]{c}[/bold]\")\n-    rprint(\"[dim]Use chat_to for a quick message or chat_with for a conversation.[/dim]\")\n+    rprint(\"[dim]Use chat_to for a quick message, chat_with for a conversation, or reset_chat to clear history.[/dim]\")\ndiff --git a/commands/reset_chat.py b/commands/reset_chat.py\nnew file mode 100644\nindex 0000000..08a0404\n--- /dev/null\n+++ b/commands/reset_chat.py\n@@ -0,0 +1,38 @@\n+\n+\"\"\"\n+commands/reset_chat.py\n+\n+Handles the reset_chat CLI command to clear a character's conversation history.\n+\"\"\"\n+from rich import print as rprint\n+\n+import chat_history\n+from .chat_common import check_lore_service, parse_character_from_args, resolve_character\n+\n+\n+def handle(args, context):\n+    \"\"\"\n+    Handles the reset_chat <character> CLI command.\n+\n+    Clears all messages for a character's chat session while keeping the session.\n+    \"\"\"\n+    if not check_lore_service(\"reset_chat\"):\n+        return\n+\n+    character_name, parse_warning = parse_character_from_args(args)\n+    if parse_warning:\n+        rprint(parse_warning)\n+    if not character_name:\n+        rprint(\"[red]Usage: reset_chat <character_name>\")\n+        return\n+\n+    character_to_use = resolve_character(\n+        character_name,\n+        context.get(\"characters_in_lore\", []),\n+    )\n+    if not character_to_use:\n+        return\n+\n+    session_id = chat_history.get_or_create_session(character_to_use)\n+    chat_history.reset_history(session_id)\n+    rprint(f\"[green]Cleared chat history for {character_to_use}.\")\ndiff --git a/help.py b/help.py\nindex 8c87566..a67f77e 100644\n--- a/help.py\n+++ b/help.py\n@@ -21,6 +21,7 @@ LORE_COMMANDS = [\n CHAR_COMMANDS = [\n     \"chat_to\",\n     \"chat_with\",\n+    \"reset_chat\",\n     \"list_characters\",\n ]\n SYSTEM_COMMANDS = [\"help\", \"exit\"]\n@@ -112,6 +113,8 @@ COMMAND_HELP = {\n         \"usage\": \"chat_with <character_name>\",\n         \"description\": (\n             \"Start an interactive conversation loop with a character mentioned in world lore. \"\n+            \"If there is no prior history, the character greets you first. \"\n+            \"Otherwise recent messages are shown. \"\n             \"Character replies appear as Character>> and your input uses You>>. \"\n             \"Conversation history is saved per character. Type end_chat to return to the main menu.\"\n         ),\n@@ -120,12 +123,24 @@ COMMAND_HELP = {\n             'chat_with \"The Mage of the Lake\"',\n         ],\n     },\n+    \"reset_chat\": {\n+        \"summary\": \"Clear a character's conversation history\",\n+        \"usage\": \"reset_chat <character_name>\",\n+        \"description\": (\n+            \"Delete all saved messages for a character's chat session. \"\n+            \"The session remains, but the next chat_with will start fresh with a new greeting.\"\n+        ),\n+        \"examples\": [\n+            \"reset_chat Mara\",\n+            'reset_chat \"The Mage of the Lake\"',\n+        ],\n+    },\n     \"list_characters\": {\n         \"summary\": \"List characters found in lore\",\n         \"usage\": \"list_characters\",\n         \"description\": (\n             \"Show person names extracted from all saved lore using spaCy NER. \"\n-            \"Use chat_to for a single message or chat_with for a conversation.\"\n+            \"Use chat_to for a single message, chat_with for a conversation, or reset_chat to clear history.\"\n         ),\n         \"examples\": [\n             \"list_characters\",\ndiff --git a/tests/test_chat_with.py b/tests/test_chat_with.py\nindex 7c4b6e4..4785542 100644\n--- a/tests/test_chat_with.py\n+++ b/tests/test_chat_with.py\n@@ -30,7 +30,12 @@ def test_chat_with_enters_loop_and_exits_on_end_chat(\n     capture(chat_common)\n \n     monkeypatch.setattr(chat_common.chat_history, \"get_or_create_session\", lambda character: 1)\n-    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=4: [])\n+    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n+    monkeypatch.setattr(\n+        chat_with,\n+        \"generate_opening_greeting_safe\",\n+        lambda character: \"Hello, traveler.\",\n+    )\n     monkeypatch.setattr(\n         chat_with,\n         \"send_message_and_get_reply_safe\",\n@@ -48,6 +53,7 @@ def test_chat_with_enters_loop_and_exits_on_end_chat(\n \n     output = buffer.getvalue()\n     assert \"Chatting with Mara\" in output\n+    assert \"Mara>> Hello, traveler.\" in output\n     assert \"Mara>> Reply to: Hello there\" in output\n     assert \"Ended chat with Mara\" in output\n \n@@ -67,12 +73,8 @@ def test_chat_with_supports_multi_word_character_names(\n         \"get_or_create_session\",\n         lambda character: captured.setdefault(\"character\", character) or 1,\n     )\n-    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=4: [])\n-    monkeypatch.setattr(\n-        chat_with,\n-        \"send_message_and_get_reply_safe\",\n-        lambda character, message: \"Greetings.\",\n-    )\n+    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n+    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character: \"Greetings.\")\n     monkeypatch.setattr(\n         chat_with,\n         \"PromptSession\",\n@@ -97,11 +99,16 @@ def test_chat_with_shows_recent_history(initialized_lore, capture_rprint, monkey\n     monkeypatch.setattr(\n         chat_common.chat_history,\n         \"get_history\",\n-        lambda session_id, limit=4: [\n+        lambda session_id, limit=1: [(\"user\", \"Hello\")] if limit == 1 else [\n             (\"user\", \"Hello\"),\n             (\"character\", \"Welcome back.\"),\n         ],\n     )\n+    monkeypatch.setattr(\n+        chat_with,\n+        \"generate_opening_greeting_safe\",\n+        lambda character: \"Should not be called\",\n+    )\n     monkeypatch.setattr(\n         chat_with,\n         \"PromptSession\",\n@@ -116,6 +123,33 @@ def test_chat_with_shows_recent_history(initialized_lore, capture_rprint, monkey\n     assert \"Mara>> Welcome back.\" in output\n \n \n+def test_chat_with_generates_greeting_for_new_session(\n+    initialized_lore, capture_rprint, monkeypatch\n+):\n+    capture, buffer = capture_rprint\n+    chat_with = _chat_with_module()\n+    capture(chat_with)\n+    capture(chat_common)\n+\n+    monkeypatch.setattr(chat_common.chat_history, \"get_or_create_session\", lambda character: 1)\n+    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n+    monkeypatch.setattr(\n+        chat_with,\n+        \"generate_opening_greeting_safe\",\n+        lambda character: \"Welcome back to the lake.\",\n+    )\n+    monkeypatch.setattr(\n+        chat_with,\n+        \"PromptSession\",\n+        lambda: MagicMock(prompt=lambda *args, **kwargs: \"end_chat\"),\n+    )\n+\n+    chat_with.handle([\"Mara\"], {\"characters_in_lore\": {\"Mara\"}})\n+\n+    assert \"Mara>> Welcome back to the lake.\" in buffer.getvalue()\n+    assert \"Recent conversation\" not in buffer.getvalue()\n+\n+\n def test_chat_with_help_inside_loop(initialized_lore, capture_rprint, monkeypatch):\n     capture, buffer = capture_rprint\n     chat_with = _chat_with_module()\n@@ -123,7 +157,8 @@ def test_chat_with_help_inside_loop(initialized_lore, capture_rprint, monkeypatc\n     capture(chat_common)\n \n     monkeypatch.setattr(chat_common.chat_history, \"get_or_create_session\", lambda character: 1)\n-    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=4: [])\n+    monkeypatch.setattr(chat_common.chat_history, \"get_history\", lambda session_id, limit=1: [])\n+    monkeypatch.setattr(chat_with, \"generate_opening_greeting_safe\", lambda character: None)\n     prompts = iter([\"help\", \"end_chat\"])\n     monkeypatch.setattr(\n         chat_with,\ndiff --git a/tests/test_reset_chat.py b/tests/test_reset_chat.py\nnew file mode 100644\nindex 0000000..bda4f88\n--- /dev/null\n+++ b/tests/test_reset_chat.py\n@@ -0,0 +1,53 @@\n+\"\"\"Tests for reset_chat command handler.\"\"\"\n+import importlib\n+\n+import commands.chat_common as chat_common\n+import lore\n+\n+\n+def _reset_chat_module():\n+    return importlib.import_module(\"commands.reset_chat\")\n+\n+\n+def test_reset_chat_requires_character_name(initialized_lore, capture_rprint):\n+    capture, buffer = capture_rprint\n+    reset_chat = _reset_chat_module()\n+    capture(reset_chat)\n+    capture(chat_common)\n+\n+    reset_chat.handle([], initialized_lore[\"context\"])\n+\n+    assert \"Usage: reset_chat\" in buffer.getvalue()\n+\n+\n+def test_reset_chat_clears_history(initialized_lore, capture_rprint, monkeypatch):\n+    capture, buffer = capture_rprint\n+    reset_chat = _reset_chat_module()\n+    capture(reset_chat)\n+    capture(chat_common)\n+\n+    reset_called = {\"value\": False}\n+\n+    monkeypatch.setattr(chat_common.chat_history, \"get_or_create_session\", lambda character: 7)\n+\n+    def fake_reset(session_id):\n+        reset_called[\"value\"] = True\n+        assert session_id == 7\n+\n+    monkeypatch.setattr(chat_common.chat_history, \"reset_history\", fake_reset)\n+\n+    reset_chat.handle([\"Mara\"], {\"characters_in_lore\": {\"Mara\"}})\n+\n+    assert reset_called[\"value\"] is True\n+    assert \"Cleared chat history for Mara\" in buffer.getvalue()\n+\n+\n+def test_reset_chat_rejects_unknown_character(initialized_lore, capture_rprint):\n+    capture, buffer = capture_rprint\n+    reset_chat = _reset_chat_module()\n+    capture(reset_chat)\n+    capture(chat_common)\n+\n+    reset_chat.handle([\"Unknown\"], {\"characters_in_lore\": {\"Mara\"}})\n+\n+    assert \"not mentioned in any world lore\" in buffer.getvalue()\n",
+        "stats": {
+          "deletions": 14,
+          "files": [
+            {
+              "additions": 3,
+              "deletions": 1,
+              "path": "INSTRUCTIONS.md",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 2,
+              "deletions": 0,
+              "path": "commands/__init__.py",
+              "status": "M"
+            },
+            {
+              "additions": 55,
+              "deletions": 0,
+              "path": "commands/chat_common.py",
+              "status": "M"
+            },
+            {
+              "additions": 9,
+              "deletions": 1,
+              "path": "commands/chat_with.py",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "commands/list_characters.py",
+              "status": "M"
+            },
+            {
+              "additions": 38,
+              "deletions": 0,
+              "path": "commands/reset_chat.py",
+              "status": "A"
+            },
+            {
+              "additions": 16,
+              "deletions": 1,
+              "path": "help.py",
+              "status": "M"
+            },
+            {
+              "additions": 44,
+              "deletions": 9,
+              "path": "tests/test_chat_with.py",
+              "status": "M"
+            },
+            {
+              "additions": 53,
+              "deletions": 0,
+              "path": "tests/test_reset_chat.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 10,
+          "insertions": 222
+        },
+        "truncated": false
+      },
+      "features": [
+        "Clear a character’s chat history with `reset_chat <character_name>`",
+        "Generate an opening in-character greeting for new conversations",
+        "Show recent conversation history when returning to an existing chat",
+        "Expose `reset_chat` in command help, listings, and documentation"
+      ],
+      "is_head": false,
+      "sha": "39cf326ce2424f03ecdfa647039eb8b10a2f61bb",
+      "short_sha": "39cf326",
+      "subject": "Add Reset Chat Command",
+      "summary": "Adds a `reset_chat` command that clears a character’s saved conversation history while preserving the character session. New conversations now begin with an automatically generated in-character greeting, while returning conversations continue to show recent history."
+    },
+    {
+      "authored_at": "2026-08-23T17:13:14-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Delete the deprecated location and scene command handlers and update\nthe architecture notes to reflect the remaining chat-oriented command\nset. Document the development workflow in the README, and switch chat\nhistory timestamps to timezone-aware UTC so stored session activity is\nconsistent and unambiguous.\n",
+        "patch": "diff --git a/ARCHITECTURE.md b/ARCHITECTURE.md\nindex 8b91c29..161b97f 100644\n--- a/ARCHITECTURE.md\n+++ b/ARCHITECTURE.md\n@@ -38,7 +38,6 @@ LoreBuilder is a modular CLI application for RAG-powered conversational world-bu\n - Each handler implements a single CLI entrypoint (e.g., add_lore, chat_to, list_characters)\n - All command handlers are centrally registered in commands/__init__.py\n - Dynamic help and menu loading—only active and maintained commands appear in UI/menus (`help` relies on docstrings)\n-- All deprecated modules such as locations.py and npcs.py are now entirely decoupled and safe to remove\n \n ---\n \n@@ -82,9 +81,9 @@ LoreBuilder is a modular CLI application for RAG-powered conversational world-bu\n \n ---\n \n-## 7. Deprecations\n+## 7. Removed Legacy Commands\n \n-- The locations.py and npcs.py modules are no longer referenced or registered; their logic is not used in the current CLI, command registry, or world data model, and are safe to delete.\n+Location and scene commands (`look`, `history`, `save_look`, `reset`) have been removed. Character chat is handled by `chat_to` and `chat_with`.\n \n ---\n \ndiff --git a/README.md b/README.md\nindex 8e4bd12..56df29c 100644\n--- a/README.md\n+++ b/README.md\n@@ -76,6 +76,31 @@ ARCHITECTURE.md      # Dev architecture doc\n \n ---\n \n+## Development\n+\n+Install runtime and test dependencies:\n+\n+```bash\n+pip install -r requirements.txt -r requirements-dev.txt\n+python -m spacy download en_core_web_sm\n+```\n+\n+Run the test suite:\n+\n+```bash\n+pytest\n+```\n+\n+With coverage:\n+\n+```bash\n+pytest --cov=. --cov-report=term-missing\n+```\n+\n+Tests run automatically on GitHub Actions for pushes and pull requests to `dev` and `main`.\n+\n+---\n+\n ## Documentation\n \n - See [ARCHITECTURE.md](ARCHITECTURE.md)\ndiff --git a/chat_history.py b/chat_history.py\nindex 085719b..d6cdbe8 100644\n--- a/chat_history.py\n+++ b/chat_history.py\n@@ -5,7 +5,7 @@ chat_history.py\n Provides SQLite-backed session-based chat history management for multi-turn character conversations.\n \"\"\"\n import sqlite3\n-from datetime import datetime\n+from datetime import datetime, timezone\n from typing import List, Optional, Tuple, Dict\n from contextlib import contextmanager\n \n@@ -29,6 +29,11 @@ from constants import (\n )\n \n \n+def _utc_now() -> str:\n+    \"\"\"Return current UTC time as an ISO string for SQLite storage.\"\"\"\n+    return datetime.now(timezone.utc).isoformat()\n+\n+\n class ChatHistoryService:\n     \"\"\"Service class for managing SQLite-backed chat history for character conversations.\"\"\"\n     \n@@ -122,14 +127,14 @@ class ChatHistoryService:\n                     session_id = row[0]\n                     cur.execute(\n                         \"UPDATE chat_sessions SET last_active=? WHERE id=?\",\n-                        (datetime.utcnow(), session_id),\n+                        (_utc_now(), session_id),\n                     )\n                     conn.commit()\n                     return session_id\n                 # Create new session\n                 cur.execute(\n                     \"INSERT INTO chat_sessions (character, last_active) VALUES (?, ?)\",\n-                    (character, datetime.utcnow()),\n+                    (character, _utc_now()),\n                 )\n                 session_id = cur.lastrowid\n                 conn.commit()\n@@ -155,7 +160,7 @@ class ChatHistoryService:\n             raise ValueError(ERROR_EMPTY_MESSAGE)\n             \n         try:\n-            ts = datetime.utcnow()\n+            ts = _utc_now()\n             with self.get_connection() as conn:\n                 cur = conn.cursor()\n                 cur.execute(\ndiff --git a/commands/history.py b/commands/history.py\ndeleted file mode 100644\nindex 28ea3bb..0000000\n--- a/commands/history.py\n+++ /dev/null\n@@ -1,12 +0,0 @@\n-\n-\"\"\"\n-commands/history.py\n-\n-Handles the /history CLI command for LoreBuilder after refactoring.\n-\"\"\"\n-\n-def handle(args, context):\n-    \"\"\"\n-    This command is no longer available.\n-    \"\"\"\n-    print(\"Location and movement history are no longer available.\")\ndiff --git a/commands/look.py b/commands/look.py\ndeleted file mode 100644\nindex d67fccc..0000000\n--- a/commands/look.py\n+++ /dev/null\n@@ -1,8 +0,0 @@\n-\n-\"\"\"\n-commands/look.py\n-\n-This command is no longer available. Location/scene commands have been removed.\n-\"\"\"\n-\n-\ndiff --git a/commands/reset.py b/commands/reset.py\ndeleted file mode 100644\nindex 8b13789..0000000\n--- a/commands/reset.py\n+++ /dev/null\n@@ -1 +0,0 @@\n-\ndiff --git a/commands/save_look.py b/commands/save_look.py\ndeleted file mode 100644\nindex e8b0f2c..0000000\n--- a/commands/save_look.py\n+++ /dev/null\n@@ -1,14 +0,0 @@\n-\n-\"\"\"\n-commands/save_look.py\n-\n-Handles the /save_look CLI command for LoreBuilder after refactoring.\n-\"\"\"\n-\n-def handle(args, context):\n-    \"\"\"\n-    This command is deprecated. Location capabilities have been removed.\n-    \"\"\"\n-    print(\"[yellow]/save_look is deprecated: location capabilities have been removed.[/yellow]\")\n-\n-\n",
+        "stats": {
+          "deletions": 42,
+          "files": [
+            {
+              "additions": 2,
+              "deletions": 3,
+              "path": "ARCHITECTURE.md",
+              "status": "M"
+            },
+            {
+              "additions": 25,
+              "deletions": 0,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 9,
+              "deletions": 4,
+              "path": "chat_history.py",
+              "status": "M"
+            },
+            {
+              "additions": 0,
+              "deletions": 12,
+              "path": "commands/history.py",
+              "status": "D"
+            },
+            {
+              "additions": 0,
+              "deletions": 8,
+              "path": "commands/look.py",
+              "status": "D"
+            },
+            {
+              "additions": 0,
+              "deletions": 1,
+              "path": "commands/reset.py",
+              "status": "D"
+            },
+            {
+              "additions": 0,
+              "deletions": 14,
+              "path": "commands/save_look.py",
+              "status": "D"
+            }
+          ],
+          "files_changed": 7,
+          "insertions": 36
+        },
+        "truncated": false
+      },
+      "features": [
+        "Legacy location and scene commands removed",
+        "Chat history timestamps stored as timezone-aware UTC ISO strings",
+        "Development setup, testing, and coverage instructions added"
+      ],
+      "is_head": false,
+      "sha": "8d92fa480494550698a8d0eb3c1cdc2fe0aba179",
+      "short_sha": "8d92fa4",
+      "subject": "Remove legacy location commands",
+      "summary": "Removes the legacy location and scene commands, including `look`, `history`, `save_look`, and `reset`, from the application. Chat history timestamps now use explicit UTC ISO-format values, and the README documents dependency installation and test commands."
+    },
+    {
+      "authored_at": "2026-08-23T17:09:54-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Add a GitHub Actions workflow that runs the test suite on pushes and\npull requests to the main development branches.\n\nThis gives each change a consistent automated check before merge and\nhelps catch regressions earlier in the review process.\n",
+        "patch": "diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml\nnew file mode 100644\nindex 0000000..11d4f74\n--- /dev/null\n+++ b/.github/workflows/test.yml\n@@ -0,0 +1,36 @@\n+name: Tests\n+\n+on:\n+  push:\n+    branches:\n+      - dev\n+      - main\n+  pull_request:\n+    branches:\n+      - dev\n+      - main\n+\n+jobs:\n+  test:\n+    runs-on: ubuntu-latest\n+\n+    steps:\n+      - name: Checkout\n+        uses: actions/checkout@v4\n+\n+      - name: Set up Python\n+        uses: actions/setup-python@v5\n+        with:\n+          python-version: \"3.12\"\n+          cache: pip\n+          cache-dependency-path: |\n+            requirements.txt\n+            requirements-dev.txt\n+\n+      - name: Install dependencies\n+        run: |\n+          python -m pip install --upgrade pip\n+          pip install -r requirements.txt -r requirements-dev.txt\n+\n+      - name: Run tests\n+        run: pytest --cov=. --cov-report=term-missing\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 36,
+              "deletions": 0,
+              "path": ".github/workflows/test.yml",
+              "status": "A"
+            }
+          ],
+          "files_changed": 1,
+          "insertions": 36
+        },
+        "truncated": false
+      },
+      "features": [
+        "CI tests on main and dev pushes",
+        "CI tests on pull requests to main and dev",
+        "Python 3.12 test environment",
+        "Dependency installation with pip caching",
+        "Pytest coverage reporting"
+      ],
+      "is_head": false,
+      "sha": "4ffb81442e37a9bcda178412a66096f938313b7a",
+      "short_sha": "4ffb814",
+      "subject": "Make Add CI test workflow",
+      "summary": "Adds an automated test workflow for pushes and pull requests targeting the main or dev branches. It runs the test suite on Ubuntu with Python 3.12, installs project dependencies, and reports test coverage."
+    }
+  ],
+  "updated_at": "2026-09-29T18:16:16.046535+00:00",
+  "working_tree": {
+    "clean": false,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": [
+      {
+        "path": "rewrite-git-dates.sh",
+        "status": "??"
+      }
+    ]
+  }
+}
