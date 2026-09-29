@@ -1,16 +1,6 @@
 {
   "repos": [
     {
-      "ahead_count": 2,
-      "base_ref": "main",
-      "branch": "topic/demo",
-      "id": "example",
-      "name": "example",
-      "source": "scaffold",
-      "updated_at": "2026-09-29T16:00:00Z",
-      "working_tree_clean": false
-    },
-    {
       "ahead_count": 17,
       "base_ref": "last-pushed → d53d58d (origin/main)",
       "branch": "main",

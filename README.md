@@ -37,6 +37,6 @@ Use a local server so `fetch('data/…')` works (file:// blocks it).
 
 ## Snapshot schema
 
-See `data/repos/example.json`. `schema_version` is currently `1`.
+See `data/repos/monitor.json` (or any published repo file). `schema_version` is currently `1`.
 The status-branch publisher writes `data/repos/<id>.json` and upserts
 `data/index.json` into this checkout; commit and push here to update Pages.
