@@ -47,8 +47,8 @@
       "id": "lorebuilder-cli",
       "name": "lorebuilder-cli",
       "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:16:16.046535+00:00",
-      "working_tree_clean": false
+      "updated_at": "2026-09-29T18:21:06.235572+00:00",
+      "working_tree_clean": true
     },
     {
       "ahead_count": 3,
@@ -102,5 +102,5 @@
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:17:57.701231+00:00"
+  "updated_at": "2026-09-29T18:21:06.235572+00:00"
 }

@@ -5,11 +5,39 @@
   "branch": "main",
   "commit_count": 6,
   "files_touched_total": 32,
-  "future_steps": [],
+  "future_steps": [
+    {
+      "text": "Define and enforce collision handling for duplicate preferred display names, including clear errors when a name cannot uniquely resolve to one lore character."
+    },
+    {
+      "text": "Add end-to-end coverage for restarting the application after renaming a character, then resolving the character and loading its migrated history by both names."
+    },
+    {
+      "text": "Specify and implement reset_chat behavior for missing or already-empty sessions, with a clear result while preserving the character and its display-name metadata."
+    },
+    {
+      "text": "Verify greeting and resume behavior across interrupted or partially persisted conversations so a failed first message does not incorrectly mark a session as established."
+    },
+    {
+      "text": "Expose a safe way to inspect or recover conversation state when persisted history is malformed or references a character that was removed from lore."
+    },
+    {
+      "text": "Add regression coverage for CLI parsing and shell invocation so literal placeholder handling remains correct for quoted, optional, and variadic arguments."
+    }
+  ],
   "head_sha": "d3b4dc0e860764876e46788c170afd645526c09e",
   "head_story": {
-    "features": [],
-    "text": ""
+    "features": [
+      "Receive an in-character greeting when starting a new conversation",
+      "Resume a character conversation with recent history",
+      "Clear a character’s saved chat history with reset_chat",
+      "Assign preferred display names to lore characters",
+      "Chat with characters using either their lore name or display name",
+      "See aliases in character listings with the original lore name shown",
+      "Preserve and migrate existing chat history when renaming a character",
+      "View CLI usage and help placeholders literally"
+    ],
+    "text": "Starting a new character conversation now opens with an in-character greeting, while existing conversations resume with their recent history. Chat history can be cleared without deleting the session, and lore characters can be given preferred display names that work across listings, chat resolution, lore context, and saved history. CLI help and usage messages now show placeholders literally, and obsolete location commands have been removed."
   },
   "range_label": "e342c7d..d3b4dc0",
   "repo": {
@@ -139,12 +167,20 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Set character aliases with `rename_character`",
+        "Use display names in character listings and chat",
+        "Resolve chats using either lore names or aliases",
+        "Search lore context using both names",
+        "Migrate existing chat history to the new display name",
+        "Show the original lore name alongside an alias",
+        "Document the new character-renaming command"
+      ],
       "is_head": true,
       "sha": "d3b4dc0e860764876e46788c170afd645526c09e",
       "short_sha": "d3b4dc0",
       "subject": "Add Character Aliases For Lore Chat",
-      "summary": ""
+      "summary": "Adds persistent display-name aliases for characters extracted from lore. Users can rename a lore character for chat and listings without changing the lore text, while existing chat history is migrated and both names remain available for finding relevant context."
     },
     {
       "authored_at": "2026-08-23T17:25:23-04:00",
@@ -471,17 +507,12 @@
       "summary": "Adds an automated test workflow for pushes and pull requests targeting the main or dev branches. It runs the test suite on Ubuntu with Python 3.12, installs project dependencies, and reports test coverage."
     }
   ],
-  "updated_at": "2026-09-29T18:16:16.046535+00:00",
+  "updated_at": "2026-09-29T18:21:06.235572+00:00",
   "working_tree": {
-    "clean": false,
+    "clean": true,
     "staged": [],
     "summary": "",
     "unstaged": [],
-    "untracked": [
-      {
-        "path": "rewrite-git-dates.sh",
-        "status": "??"
-      }
-    ]
+    "untracked": []
   }
 }
