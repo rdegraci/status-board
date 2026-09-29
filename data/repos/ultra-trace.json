@@ -1,0 +1,48 @@
+{
+  "ahead_count": 0,
+  "base_ref": "last-pushed → 21f1eee (origin/main)",
+  "base_sha": "21f1eee472586c69059a8f9cb2f7cc44b6261c9e",
+  "branch": "main",
+  "commit_count": 0,
+  "files_touched_total": 0,
+  "future_steps": [
+    {
+      "text": "Define the intended user-facing outcome and acceptance criteria for this branch, since no implementation or feature scope is present yet."
+    },
+    {
+      "text": "Inspect the current baseline behavior and test coverage to identify the smallest missing capability that delivers that outcome."
+    },
+    {
+      "text": "Implement that capability as a complete vertical slice, including its validation and failure behavior."
+    },
+    {
+      "text": "Add focused regression tests for the primary success path and the most important invalid or edge-case inputs."
+    },
+    {
+      "text": "Run the relevant test suite and integration checks, then resolve any compatibility or configuration issues exposed by the new behavior."
+    }
+  ],
+  "head_sha": "21f1eee472586c69059a8f9cb2f7cc44b6261c9e",
+  "head_story": {
+    "features": [],
+    "text": "No changes were made; the tip is identical to the base commit."
+  },
+  "range_label": "21f1eee..21f1eee",
+  "repo": {
+    "id": "ultra-trace",
+    "name": "ultra-trace",
+    "path": "/Users/rdegraci/Hack/ultra-trace",
+    "remote": "github-personal/rdegraci/ultra-trace"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [],
+  "updated_at": "2026-09-29T18:07:23.379704+00:00",
+  "working_tree": {
+    "clean": true,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": []
+  }
+}
