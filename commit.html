@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Commit · status-board</title>
+  <script>
+    (function () {
+      function applyTheme() {
+        var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute(
+          "data-bs-theme",
+          dark ? "dark" : "light"
+        );
+      }
+      applyTheme();
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      if (typeof mq.addEventListener === "function") {
+        mq.addEventListener("change", applyTheme);
+      } else if (typeof mq.addListener === "function") {
+        mq.addListener(applyTheme);
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <header class="sb-context border-bottom">
+    <div class="container-fluid py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+      <div class="me-auto">
+        <div class="sb-repo" id="repo-name">…</div>
+        <div class="sb-repo-path sb-mono text-secondary" id="repo-path"></div>
+        <div class="sb-meta text-secondary small" id="commit-meta"></div>
+      </div>
+      <a class="btn btn-sm btn-outline-secondary" id="back-link" href="index.html">Back</a>
+    </div>
+  </header>
+
+  <main class="container-fluid px-3 py-3">
+    <p class="small text-secondary" id="commit-status">Loading…</p>
+
+    <div id="commit-body" hidden>
+      <section class="sb-section mb-4">
+        <h1 class="h4" id="commit-subject"></h1>
+        <pre class="small text-secondary sb-body" id="commit-body-text" hidden></pre>
+        <p class="small text-secondary mb-0" id="commit-author"></p>
+      </section>
+
+      <section class="sb-section mb-4">
+        <h2 class="h5">Commit summary</h2>
+        <p class="small text-secondary mb-2">
+          Plain-language summary of this commit’s diff (from the published snapshot).
+        </p>
+        <div class="sb-narrative mb-2" id="detail-story-text"></div>
+        <p class="small mb-1" id="detail-features-label" hidden><strong>Features in this commit</strong></p>
+        <ul class="mb-0" id="detail-story-features"></ul>
+      </section>
+
+      <section class="sb-section mb-4">
+        <h2 class="h5">Files</h2>
+        <p class="small text-secondary" id="files-meta"></p>
+        <ul class="small sb-mono" id="files-list"></ul>
+      </section>
+
+      <section class="sb-section">
+        <h2 class="h5">Diff</h2>
+        <div class="alert alert-warning py-2" id="diff-truncated" hidden>Diff truncated for display.</div>
+        <div class="sb-diff" id="diff-panel" aria-label="Unified diff"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/commit.js"></script>
+</body>
+</html>

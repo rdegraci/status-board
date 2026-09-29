@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>status-board</title>
+  <script>
+    (function () {
+      function applyTheme() {
+        var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute(
+          "data-bs-theme",
+          dark ? "dark" : "light"
+        );
+      }
+      applyTheme();
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      if (typeof mq.addEventListener === "function") {
+        mq.addEventListener("change", applyTheme);
+      } else if (typeof mq.addListener === "function") {
+        mq.addListener(applyTheme);
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <header class="sb-context border-bottom">
+    <div class="container-fluid py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+      <div class="me-auto">
+        <a class="sb-brand" href="index.html">status-board</a>
+        <div class="small text-secondary">Published snapshots from status-branch</div>
+      </div>
+      <span class="small text-secondary" id="hub-updated" hidden></span>
+    </div>
+  </header>
+
+  <main class="container-fluid px-3 py-3">
+    <section class="sb-section" aria-label="Dashboard">
+      <h1 class="h5 mb-3">Dashboard</h1>
+      <p class="small text-secondary" id="hub-status">Loading…</p>
+      <div class="table-responsive" id="hub-table-wrap" hidden>
+        <table class="table table-sm align-middle sb-hub-table">
+          <thead>
+            <tr>
+              <th scope="col">Repository</th>
+              <th scope="col">Branch</th>
+              <th scope="col">Base</th>
+              <th scope="col">Ahead</th>
+              <th scope="col">Tree</th>
+              <th scope="col">Updated</th>
+            </tr>
+          </thead>
+          <tbody id="hub-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/hub.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>status-board</title>
+  <script>
+    (function () {
+      function applyTheme() {
+        var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute(
+          "data-bs-theme",
+          dark ? "dark" : "light"
+        );
+      }
+      applyTheme();
+      var mq = window.matchMedia("(prefers-color-scheme: dark)");
+      if (typeof mq.addEventListener === "function") {
+        mq.addEventListener("change", applyTheme);
+      } else if (typeof mq.addListener === "function") {
+        mq.addListener(applyTheme);
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <header class="sb-context border-bottom">
+    <div class="container-fluid py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+      <div class="me-auto">
+        <div class="d-flex align-items-baseline gap-2 flex-wrap">
+          <a class="small text-secondary text-decoration-none" href="index.html">← Dashboard</a>
+        </div>
+        <div class="sb-repo" id="repo-name">…</div>
+        <div class="sb-repo-path sb-mono text-secondary" id="repo-path"></div>
+        <div class="sb-meta text-secondary small" id="repo-meta"></div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge sb-badge-quiet" id="source-badge" hidden></span>
+        <span class="badge" id="dirty-badge" hidden></span>
+        <span class="small text-secondary" id="repo-updated"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container-fluid px-3 py-3">
+    <p class="small text-secondary" id="repo-status">Loading…</p>
+
+    <div id="repo-body" hidden>
+      <section class="sb-section mb-4" aria-label="Story at HEAD, Working tree, and Future story">
+        <div class="row g-3 sb-overview-row">
+          <div class="col-lg-4">
+            <div class="sb-scroll-panel h-100">
+              <div class="sb-scroll-panel-body">
+                <h2 class="h5">Story at HEAD</h2>
+                <p class="small text-secondary mb-2" id="head-story-meta"></p>
+                <div class="sb-narrative mb-3" id="head-story-text"></div>
+                <p class="small mb-1" id="head-features-label" hidden><strong>Features</strong></p>
+                <ul class="mb-0" id="head-story-features"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="sb-scroll-panel h-100">
+              <div class="sb-scroll-panel-body">
+                <h2 class="h5">Working tree</h2>
+                <div id="working-tree-content"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="sb-scroll-panel h-100">
+              <div class="sb-scroll-panel-body">
+                <h2 class="h5">Future story</h2>
+                <p class="small text-secondary mb-2">Suggested next steps</p>
+                <ol class="mb-0" id="future-story-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sb-section" aria-label="Spine">
+        <h2 class="h5">Spine</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle sb-spine">
+            <thead>
+              <tr>
+                <th scope="col">SHA</th>
+                <th scope="col">Subject</th>
+                <th scope="col">When</th>
+                <th scope="col">Summary</th>
+                <th scope="col">Features</th>
+                <th scope="col">Details</th>
+              </tr>
+            </thead>
+            <tbody id="spine-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/repo.js"></script>
+</body>
+</html>
