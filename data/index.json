@@ -2,6 +2,16 @@
   "repos": [
     {
       "ahead_count": 6,
+      "base_ref": "last-pushed → 671907b (local HEAD~6; fully pushed (origin/main))",
+      "branch": "main",
+      "id": "bugmiester",
+      "name": "bugmiester",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T18:16:32.068062+00:00",
+      "working_tree_clean": false
+    },
+    {
+      "ahead_count": 6,
       "base_ref": "last-pushed → e342c7d (local HEAD~6; fully pushed (origin/main))",
       "branch": "main",
       "id": "lorebuilder-cli",
@@ -32,5 +42,5 @@
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:16:16.046535+00:00"
+  "updated_at": "2026-09-29T18:16:32.068062+00:00"
 }
