@@ -5,11 +5,44 @@
   "branch": "main",
   "commit_count": 3,
   "files_touched_total": 27,
-  "future_steps": [],
+  "future_steps": [
+    {
+      "text": "Add pre-submission validation for required columns, row counts, identifier alignment, missing values, and prediction bounds so malformed CSVs are rejected before use."
+    },
+    {
+      "text": "Persist complete run provenance—including configuration, random seed, dataset fingerprint, model parameters, package version, and source revision—alongside experiment history to make results reproducible."
+    },
+    {
+      "text": "Add a CI smoke test that scaffolds a competition and executes the documented status, train, eval, and submit flow on the toy competition without external services or GPUs."
+    },
+    {
+      "text": "Define a clear competition data/model contract in the scaffold, including expected input schemas, target handling, train/test splitting, and the submission format needed for customization."
+    },
+    {
+      "text": "Handle interrupted, failed, and denied training requests explicitly in experiment and approval state, with resumable status information rather than leaving ambiguous runs."
+    },
+    {
+      "text": "Add configurable validation strategies such as a fixed holdout and cross-validation, while preserving the existing ROC-AUC contract and preventing test-set leakage."
+    },
+    {
+      "text": "Provide an optional remote submission adapter behind the local artifact workflow, with dry-run support and explicit confirmation before uploading results."
+    }
+  ],
   "head_sha": "3885f6593a6aa86220793e240f95ecb9ee7a0269",
   "head_story": {
-    "features": [],
-    "text": ""
+    "features": [
+      "Run the built-in toy binary-classification competition without GPUs or contest signup",
+      "Train models and evaluate them with a reproducible ROC-AUC metric",
+      "Track evaluation results in experiment history and a readable log",
+      "Generate a local submission CSV from trained predictions",
+      "Choose between logistic regression and random forest models through configuration",
+      "Scaffold a new competition with `maximus new`",
+      "Use an agent workflow for status checks, scoped edits, evaluation, and submission preparation",
+      "Require human approval before agent-requested training runs",
+      "Operate competitions through documented train, eval, submit, status, log, and MCP commands",
+      "Validate evaluations through a numeric metrics contract"
+    ],
+    "text": "Maximus now includes a runnable `toy_binary` competition that trains a classifier, evaluates ROC-AUC, records experiment results, and creates a local submission artifact. New competitions can be scaffolded from a ready-to-customize template, while the documented agent workflow supports scoped edits and requires human approval before training. Quick-start and operator documentation explain the CLI, MCP tools, metrics contract, and troubleshooting, and the project is now MIT-licensed."
   },
   "range_label": "a04e909..3885f65",
   "repo": {
@@ -49,12 +82,15 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "MIT licensing for the software",
+        "README license reference"
+      ],
       "is_head": true,
       "sha": "3885f6593a6aa86220793e240f95ecb9ee7a0269",
       "short_sha": "3885f65",
       "subject": "Add MIT License",
-      "summary": ""
+      "summary": "Adds an MIT license to the project and updates the README to identify the license and copyright holder."
     },
     {
       "authored_at": "2026-09-17T22:56:08-04:00",
@@ -132,12 +168,20 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Quick-start instructions for the toy_binary train/eval/status loop",
+        "CLI reference covering competition creation, training, evaluation, status, logging, submission, and MCP startup",
+        "Operator guidance for MCP setup and agent-assisted experiment cycles",
+        "Human approval gate for agent-requested training",
+        "Experiment metrics and logging contract documentation",
+        "Cursor skill and prompt pack for improving, bootstrapping, and diagnosing competitions",
+        "Documentation of competition artifacts and experiment runtime files as local-only outputs"
+      ],
       "is_head": false,
       "sha": "58bfd51706ab96600a86d883017c32b897aff04e",
       "short_sha": "58bfd51",
       "subject": "Document Maximus quick start and ops",
-      "summary": ""
+      "summary": "Adds user-facing documentation for installing and running Maximus, including a quick-start flow for the built-in toy competition and an operator guide for CLI and MCP workflows. It also documents the human-approved training gate, experiment logging and metrics requirements, agent operating rules, competition scaffolding, and local-only submission preparation."
     },
     {
       "authored_at": "2026-09-17T22:56:06-04:00",
@@ -275,15 +319,24 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Reusable competition project template",
+        "Standard train, eval, and submit workflow",
+        "Synthetic binary-classification smoke test",
+        "Configurable logistic regression or random forest training",
+        "Reproducible train/test data splits",
+        "ROC-AUC metrics written to artifacts/metrics.json",
+        "Local prediction submission CSV generation",
+        "Experiment log and artifact directory scaffolding"
+      ],
       "is_head": false,
       "sha": "e7b6dec1612644983ed8253cc24d4b301b980e12",
       "short_sha": "e7b6dec",
       "subject": "Add competition template and toy_binary",
-      "summary": ""
+      "summary": "Adds a reusable competition starter template with train, evaluation, and submission stubs, plus a runnable toy binary-classification competition. The toy competition generates synthetic data, trains a configurable classifier, evaluates ROC-AUC on a held-out split, and writes model, metric, and submission artifacts without requiring GPUs or contest access."
     }
   ],
-  "updated_at": "2026-09-29T18:17:15.939210+00:00",
+  "updated_at": "2026-09-29T18:28:31.971500+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],

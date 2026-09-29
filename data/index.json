@@ -57,7 +57,7 @@
       "id": "maximus",
       "name": "maximus",
       "source": "MBP-64GB.local",
-      "updated_at": "2026-09-29T18:17:15.939210+00:00",
+      "updated_at": "2026-09-29T18:28:31.971500+00:00",
       "working_tree_clean": true
     },
     {
@@ -102,5 +102,5 @@
     }
   ],
   "schema_version": 1,
-  "updated_at": "2026-09-29T18:26:57.615089+00:00"
+  "updated_at": "2026-09-29T18:28:31.971500+00:00"
 }
