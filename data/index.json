@@ -1,16 +1,26 @@
 {
-  "schema_version": 1,
-  "updated_at": "2026-09-29T16:00:00Z",
   "repos": [
     {
+      "ahead_count": 2,
+      "base_ref": "main",
+      "branch": "topic/demo",
       "id": "example",
       "name": "example",
-      "branch": "topic/demo",
-      "base_ref": "main",
-      "ahead_count": 2,
-      "working_tree_clean": false,
+      "source": "scaffold",
       "updated_at": "2026-09-29T16:00:00Z",
-      "source": "scaffold"
+      "working_tree_clean": false
+    },
+    {
+      "ahead_count": 17,
+      "base_ref": "last-pushed → d53d58d (origin/main)",
+      "branch": "main",
+      "id": "monitor",
+      "name": "monitor",
+      "source": "MBP-64GB.local",
+      "updated_at": "2026-09-29T17:26:36.825492+00:00",
+      "working_tree_clean": true
     }
-  ]
+  ],
+  "schema_version": 1,
+  "updated_at": "2026-09-29T17:26:36.825492+00:00"
 }

@@ -1,0 +1,334 @@
+{
+  "ahead_count": 17,
+  "base_ref": "last-pushed → d53d58d (origin/main)",
+  "base_sha": "6be31c82795d9f651eb642a8978e8e71c3a53a59",
+  "branch": "main",
+  "commit_count": 6,
+  "files_touched_total": 17,
+  "future_steps": [
+    {
+      "text": "Define deterministic fallback behavior for Jev timeouts, errors, malformed responses, and unavailable configurations so coding sessions remain usable without optional checks."
+    },
+    {
+      "text": "Add conflict-resolution rules for simultaneous Jev signals, including how scope expansion, incomplete acceptance criteria, effort escalation, and search ordering are prioritized in one decision."
+    },
+    {
+      "text": "Create an evaluation matrix with representative difficult requests, ambiguous requests, weak summaries, expanded requirements, and incomplete todos to measure false positives and false negatives before tuning thresholds."
+    },
+    {
+      "text": "Redact secrets and sensitive conversation content before sending context to Jev, with an explicit policy for what metadata may leave the local session."
+    },
+    {
+      "text": "Expose concise decision rationale and confidence to the user or session logs so users can understand why effort, search order, summary retention, or completion status changed."
+    },
+    {
+      "text": "Add latency and cost controls for optional checks, such as bounded deadlines, concurrency where safe, and reuse of scores within a single coding session."
+    }
+  ],
+  "head_sha": "5ee3b00f9fa788603991a379a59123ab47d89fc7",
+  "head_story": {
+    "features": [
+      "Generate random version 4 UUIDs with the `random_guid` macro",
+      "Raise reasoning effort for complex or ambiguous requests when Jev confirms the need",
+      "Reorder the top search results by Jev-scored relevance",
+      "Keep conversation history when a soft summary fails a fidelity check",
+      "Prompt for user confirmation when newly discovered work materially expands scope",
+      "Steer todo items away from `done` when acceptance criteria appear incomplete"
+    ],
+    "text": "Optional Jev checks now improve coding-session decisions: they can raise reasoning effort for difficult requests, reorder the most relevant search results, protect conversation context from weak summaries, and flag scope or completion decisions that need attention. Todo updates now surface a confirmation notice for materially expanded work and can prevent premature completion. A public macro also generates random version 4 UUIDs."
+  },
+  "range_label": "6be31c8..5ee3b00",
+  "repo": {
+    "id": "monitor",
+    "name": "monitor",
+    "path": "/Users/rdegraci/Hack/monitor3",
+    "remote": "github-personal/rdegraci/monitor"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [
+    {
+      "authored_at": "2026-09-27T18:12:19-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Expose a public `random_guid` macro that generates version 4 UUIDs for\nusers needing unique identifiers during monitor workflows. Document the\nmacro in the public catalog and verify that generated values have the\nexpected UUID version and variant.\n",
+        "patch": "diff --git a/docs/MACROS_README.md b/docs/MACROS_README.md\nindex 440d179..4fb61bd 100644\n--- a/docs/MACROS_README.md\n+++ b/docs/MACROS_README.md\n@@ -83,6 +83,7 @@ This grouped catalog is what the `macros` built-in displays.\n ## Built-in public macros\n \n The current codebase ships public macros such as:\n+- `random_guid` (a Tcl-backed version 4 UUID generator)\n - `do_diff`\n - `create_git_entry`\n - `rank_examine`\ndiff --git a/src/monitor/lib/macros.py b/src/monitor/lib/macros.py\nindex bc2175e..5a02fb9 100644\n--- a/src/monitor/lib/macros.py\n+++ b/src/monitor/lib/macros.py\n@@ -82,6 +82,20 @@ PRIVATE_MACRO_METADATA = {\n # Useful macros, these are visible when dumping macros via the 'macros' built in command.\n PUBLIC_MACRO_VALUES = {\n     \"do_diff\": \"Examine the files that have been modified, using the perform_git_diff tool\",\n+    \"random_guid\": (\n+        \"tcl set hex 0123456789abcdef; \"\n+        \"set guid {}; \"\n+        \"for {set index 0} {$index < 32} {incr index} { \"\n+        \"append guid [string index $hex [expr {int(rand() * 16)}]] \"\n+        \"}; \"\n+        \"set guid [string replace $guid 12 12 4]; \"\n+        \"set variant [lindex {8 9 a b} [expr {int(rand() * 4)}]]; \"\n+        \"set guid [string replace $guid 16 16 $variant]; \"\n+        \"puts [format \\\"%s-%s-%s-%s-%s\\\" \"\n+        \"[string range $guid 0 7] [string range $guid 8 11] \"\n+        \"[string range $guid 12 15] [string range $guid 16 19] \"\n+        \"[string range $guid 20 31]]\"\n+    ),\n     \"create_git_entry\": dedent(\"\"\"\n         Write a commit message that strictly follows this specification.\n \n@@ -162,6 +176,11 @@ PUBLIC_MACRO_VALUES = {\n }\n \n PUBLIC_MACRO_METADATA = {\n+    \"random_guid\": {\n+        \"title\": \"Generate random GUID\",\n+        \"description\": \"Generate a random version 4 UUID using the Tcl interpreter.\",\n+        \"group\": \"built_in_general\",\n+    },\n     \"do_diff\": {\n         \"title\": \"Diff current changes\",\n         \"description\": \"Ask the assistant to inspect the files modified in the current working tree.\",\ndiff --git a/tests/monitor/lib/test_macros.py b/tests/monitor/lib/test_macros.py\nindex 7df092b..f3c7c4e 100644\n--- a/tests/monitor/lib/test_macros.py\n+++ b/tests/monitor/lib/test_macros.py\n@@ -1,13 +1,15 @@\n-import unittest\n+import errno\n import json\n-import tempfile\n import os\n-from monitor import config\n-from unittest.mock import patch, mock_open, MagicMock\n-from io import StringIO\n-from monitor.lib import macros\n import sys\n-import errno\n+import tempfile\n+import unittest\n+import uuid\n+from io import StringIO\n+from unittest.mock import MagicMock, mock_open, patch\n+\n+from monitor import config\n+from monitor.lib import macro_utils, macros\n \n \n class TestMacros(unittest.TestCase):\n@@ -53,6 +55,7 @@ class TestMacros(unittest.TestCase):\n         \"\"\"Test that public macro values are properly defined.\"\"\"\n         expected_keys = [\n             \"do_diff\",\n+            \"random_guid\",\n             \"create_git_entry\",\n             \"diff\",\n             \"diff_previous\",\n@@ -67,6 +70,20 @@ class TestMacros(unittest.TestCase):\n             self.assertIn(key, macros.PUBLIC_MACRO_VALUES)\n             self.assertIsInstance(macros.PUBLIC_MACRO_VALUES[key], str)\n \n+    def test_random_guid_macro_generates_version_four_uuid(self):\n+        \"\"\"Test that the Tcl-backed random GUID macro generates a UUID4.\"\"\"\n+        result = macro_utils.recursive_macro_expand(\n+            \"{{random_guid}}\",\n+            macros.PUBLIC_MACRO_VALUES,\n+            \"{{\",\n+            \"}}\",\n+            \"\\\\\",\n+        )\n+\n+        generated_uuid = uuid.UUID(result)\n+        self.assertEqual(generated_uuid.version, 4)\n+        self.assertEqual(generated_uuid.variant, uuid.RFC_4122)\n+\n     def test_macro_values_contain_nested_references(self):\n         \"\"\"Test that some macro values contain references to other macros.\"\"\"\n         # Test that some macros reference other macros using configured delimiters or legacy parentheses syntax\n",
+        "stats": {
+          "deletions": 7,
+          "files": [
+            {
+              "additions": 1,
+              "deletions": 0,
+              "path": "docs/MACROS_README.md",
+              "status": "M"
+            },
+            {
+              "additions": 19,
+              "deletions": 0,
+              "path": "src/monitor/lib/macros.py",
+              "status": "M"
+            },
+            {
+              "additions": 24,
+              "deletions": 7,
+              "path": "tests/monitor/lib/test_macros.py",
+              "status": "M"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 44
+        },
+        "truncated": false
+      },
+      "features": [
+        "Random version 4 UUID generation",
+        "Public macro catalog entry",
+        "Validation of UUID version and variant"
+      ],
+      "is_head": true,
+      "sha": "5ee3b00f9fa788603991a379a59123ab47d89fc7",
+      "short_sha": "5ee3b00",
+      "subject": "Add random GUID generation macro",
+      "summary": "Adds a built-in macro that generates random version 4 UUIDs using Tcl. The macro is listed in the public catalog and verified to produce valid RFC 4122 UUIDs."
+    },
+    {
+      "authored_at": "2026-09-26T15:15:00-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "On soft-trigger summarization, Score whether the summary keeps\ncritical coding context before replacing history. Low fidelity\nskips replace for that turn; hard overflow still compacts.\n",
+        "patch": "diff --git a/src/monitor/lib/history.py b/src/monitor/lib/history.py\nindex 8adf18f..a99ff8a 100644\n--- a/src/monitor/lib/history.py\n+++ b/src/monitor/lib/history.py\n@@ -611,6 +611,29 @@ def append_conversation_history(\n                         f\"Downstream truncation in reset_conversation_with_summary will \"\n                         f\"recover if needed.\"\n                     )\n+                # Soft path only: Score fidelity; low → keep history this turn.\n+                # Hard overflow still replaces (never override hard token pressure).\n+                if soft_triggered:\n+                    try:\n+                        from monitor.lib.jev_fidelity import (\n+                            history_excerpt_for_fidelity,\n+                            summary_is_faithful_enough,\n+                        )\n+\n+                        excerpt = history_excerpt_for_fidelity(conversation_history)\n+                        if not summary_is_faithful_enough(\n+                            summary_content, history_excerpt=excerpt\n+                        ):\n+                            logger.info(\n+                                \"[SUMMARIZATION] Jev fidelity rejected soft summary; \"\n+                                \"keeping conversation history this turn.\"\n+                            )\n+                            return\n+                    except Exception:\n+                        logger.debug(\n+                            \"[SUMMARIZATION] Jev fidelity gate failed; accepting summary\",\n+                            exc_info=True,\n+                        )\n                 try:\n                     logger.debug(\n                         f\"[SUMMARIZATION] Resetting conversation history. Pre-reset: \"\ndiff --git a/src/monitor/lib/jev_fidelity.py b/src/monitor/lib/jev_fidelity.py\nnew file mode 100644\nindex 0000000..f45cf7d\n--- /dev/null\n+++ b/src/monitor/lib/jev_fidelity.py\n@@ -0,0 +1,93 @@\n+\"\"\"Jev Score for compaction summary fidelity (soft path only).\"\"\"\n+\n+from __future__ import annotations\n+\n+import logging\n+from typing import Any, Optional, Sequence\n+\n+from monitor.lib import typesafe_client as tc\n+\n+logger = logging.getLogger(__name__)\n+\n+QUESTION_ID = \"summary_fidelity\"\n+\n+\n+def summary_is_faithful_enough(\n+    summary_text: str,\n+    *,\n+    history_excerpt: str | None = None,\n+) -> bool:\n+    \"\"\"Return False when Jev is confident the summary drops critical coding context.\n+\n+    Soft-fail returns True (accept summary as today).\n+    \"\"\"\n+    if not tc.is_enabled():\n+        return True\n+    text = (summary_text or \"\").strip()\n+    if not text:\n+        return False\n+\n+    state: dict[str, Any] = {\"summary\": text[:4000]}\n+    if history_excerpt:\n+        state[\"history_excerpt\"] = history_excerpt[:3000]\n+\n+    response = tc.system_one(\n+        state,\n+        {\n+            QUESTION_ID: {\n+                \"type\": \"score\",\n+                \"instructions\": (\n+                    \"For continuing a coding session, how well does `summary` \"\n+                    \"preserve critical context (files, failing tests, \"\n+                    \"acceptance criteria, open bugs)?\"\n+                ),\n+                \"criteria\": [\n+                    \"Drops critical context — unsafe to replace history\",\n+                    \"Weak — major gaps likely\",\n+                    \"Adequate for continuation\",\n+                    \"Strong fidelity\",\n+                ],\n+            }\n+        },\n+    )\n+    answer = tc.score_answer(response, QUESTION_ID)\n+    if not answer:\n+        return True\n+    try:\n+        conf = (\n+            float(answer[\"confidence\"])\n+            if answer.get(\"confidence\") is not None\n+            else None\n+        )\n+        score = float(answer.get(\"score\"))\n+    except (TypeError, ValueError):\n+        return True\n+    floor = tc.confidence_floor()\n+    if conf is None or conf < floor:\n+        return True\n+    # Scores are ~0..3; require at least \"Adequate\" (2.0) when confident.\n+    ok = score >= 2.0\n+    logger.info(\n+        \"Jev summary_fidelity score=%.2f conf=%.2f ok=%s\", score, conf, ok\n+    )\n+    return ok\n+\n+\n+def history_excerpt_for_fidelity(history: Sequence[Any], *, max_chars: int = 3000) -> str:\n+    \"\"\"Build a small excerpt from recent non-system messages.\"\"\"\n+    parts: list[str] = []\n+    for msg in reversed(list(history)):\n+        if not isinstance(msg, dict):\n+            continue\n+        role = msg.get(\"role\")\n+        if role == \"system\":\n+            continue\n+        content = msg.get(\"content\")\n+        if not isinstance(content, str) or not content.strip():\n+            continue\n+        parts.append(f\"{role}: {content.strip()[:800]}\")\n+        if sum(len(p) for p in parts) >= max_chars:\n+            break\n+    parts.reverse()\n+    text = \"\\n\".join(parts)\n+    return text[:max_chars]\ndiff --git a/tests/monitor/lib/test_jev_fidelity.py b/tests/monitor/lib/test_jev_fidelity.py\nnew file mode 100644\nindex 0000000..d25329c\n--- /dev/null\n+++ b/tests/monitor/lib/test_jev_fidelity.py\n@@ -0,0 +1,66 @@\n+\"\"\"Tests for Jev compaction summary fidelity.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import patch\n+\n+import pytest\n+\n+from monitor.lib import jev_fidelity as jf\n+\n+\n+@pytest.fixture(autouse=True)\n+def _clear_jev_env(monkeypatch):\n+    monkeypatch.delenv(\"TYPESAFE_API_KEY\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV_CONFIDENCE\", raising=False)\n+\n+\n+def test_fidelity_disabled_accepts():\n+    assert jf.summary_is_faithful_enough(\"We fixed auth.py and tests pass.\") is True\n+\n+\n+def test_fidelity_empty_rejects(monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    assert jf.summary_is_faithful_enough(\"   \") is False\n+\n+\n+@patch(\"monitor.lib.jev_fidelity.tc.system_one\")\n+def test_fidelity_low_score_rejects(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.5\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\n+            \"summary_fidelity\": {\"type\": \"score\", \"score\": 0.5, \"confidence\": 0.9}\n+        }\n+    }\n+    assert jf.summary_is_faithful_enough(\"Did some stuff.\") is False\n+\n+\n+@patch(\"monitor.lib.jev_fidelity.tc.system_one\")\n+def test_fidelity_adequate_accepts(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.5\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\n+            \"summary_fidelity\": {\"type\": \"score\", \"score\": 2.5, \"confidence\": 0.9}\n+        }\n+    }\n+    assert (\n+        jf.summary_is_faithful_enough(\n+            \"Fixed auth.py OAuth flow; tests pass; acceptance criteria met.\"\n+        )\n+        is True\n+    )\n+\n+\n+def test_history_excerpt_for_fidelity():\n+    hist = [\n+        {\"role\": \"system\", \"content\": \"ignore\"},\n+        {\"role\": \"user\", \"content\": \"fix the bug\"},\n+        {\"role\": \"assistant\", \"content\": \"looking at auth.py\"},\n+    ]\n+    text = jf.history_excerpt_for_fidelity(hist)\n+    assert \"fix the bug\" in text\n+    assert \"auth.py\" in text\n+    assert \"ignore\" not in text\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 23,
+              "deletions": 0,
+              "path": "src/monitor/lib/history.py",
+              "status": "M"
+            },
+            {
+              "additions": 93,
+              "deletions": 0,
+              "path": "src/monitor/lib/jev_fidelity.py",
+              "status": "A"
+            },
+            {
+              "additions": 66,
+              "deletions": 0,
+              "path": "tests/monitor/lib/test_jev_fidelity.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 182
+        },
+        "truncated": false
+      },
+      "features": [
+        "Scores soft-compaction summaries for retained coding context",
+        "Keeps conversation history when a confident fidelity score is below adequate",
+        "Includes recent non-system messages as scoring context",
+        "Preserves existing hard-overflow replacement behavior",
+        "Fails open when Jev is disabled, unavailable, or returns inconclusive results"
+      ],
+      "is_head": false,
+      "sha": "fb83589588bc11e0c12f940ae40fc3b73f152508",
+      "short_sha": "fb83589",
+      "subject": "Add Jev compaction fidelity Score",
+      "summary": "Adds a Jev-based fidelity check for conversation summaries created during soft compaction. Summaries judged to omit critical coding context are rejected and the existing conversation history is retained, while hard token overflows continue to replace history; unavailable or inconclusive checks fail open."
+    },
+    {
+      "authored_at": "2026-09-26T15:15:00-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "After lexical ripgrep rerank, Score the top hits and reorder when\nconfidence clears the floor. Soft-fail keeps BM25/lexical order so\nsearch quality does not regress when Jev is off.\n",
+        "patch": "diff --git a/src/monitor/lib/jev_search.py b/src/monitor/lib/jev_search.py\nnew file mode 100644\nindex 0000000..3d07c41\n--- /dev/null\n+++ b/src/monitor/lib/jev_search.py\n@@ -0,0 +1,95 @@\n+\"\"\"Jev Score reorder for code-search top-K blocks after lexical shortlist.\"\"\"\n+\n+from __future__ import annotations\n+\n+import logging\n+from typing import List\n+\n+from monitor.lib import typesafe_client as tc\n+from monitor.lib.search_rank import score_block, split_rg_output_blocks, strip_ansi\n+\n+logger = logging.getLogger(__name__)\n+\n+TOP_K = 10\n+QUESTION_PREFIX = \"blk_\"\n+\n+\n+def rerank_rg_output_with_jev(stdout: str, query: str, *, top_k: int = TOP_K) -> str:\n+    \"\"\"Lexical rerank first, then optionally Score the top-K with Jev.\n+\n+    Soft-fail returns the lexical ranking unchanged.\n+    \"\"\"\n+    from monitor.lib.search_rank import rerank_rg_output\n+\n+    lexically = rerank_rg_output(stdout, query)\n+    if not tc.is_enabled() or not lexically or not query:\n+        return lexically\n+\n+    blocks = split_rg_output_blocks(lexically)\n+    if len(blocks) <= 1:\n+        return lexically\n+\n+    head = blocks[:top_k]\n+    tail = blocks[top_k:]\n+\n+    questions = {}\n+    for i, block in enumerate(head):\n+        qid = f\"{QUESTION_PREFIX}{i}\"\n+        snippet = strip_ansi(block)[:1200]\n+        questions[qid] = {\n+            \"type\": \"score\",\n+            \"instructions\": {\n+                \"query\": query[:500],\n+                \"snippet\": snippet,\n+                \"question\": (\n+                    \"How relevant is `snippet` to answering `query` in a \"\n+                    \"codebase search?\"\n+                ),\n+            },\n+            \"criteria\": [\n+                \"Irrelevant\",\n+                \"Weakly related\",\n+                \"Useful\",\n+                \"Highly relevant hit\",\n+            ],\n+        }\n+\n+    response = tc.system_one({\"query\": query[:500]}, questions)\n+    if not response:\n+        return lexically\n+\n+    scored: List[tuple[float, int, str]] = []\n+    floor = tc.confidence_floor()\n+    any_acted = False\n+    for i, block in enumerate(head):\n+        qid = f\"{QUESTION_PREFIX}{i}\"\n+        answer = tc.score_answer(response, qid)\n+        if not answer:\n+            scored.append((score_block(block, query), i, block))\n+            continue\n+        try:\n+            conf = (\n+                float(answer[\"confidence\"])\n+                if answer.get(\"confidence\") is not None\n+                else None\n+            )\n+            val = float(answer.get(\"score\"))\n+        except (TypeError, ValueError):\n+            scored.append((score_block(block, query), i, block))\n+            continue\n+        if conf is None or conf < floor:\n+            scored.append((score_block(block, query), i, block))\n+            continue\n+        any_acted = True\n+        scored.append((val, i, block))\n+\n+    if not any_acted:\n+        return lexically\n+\n+    scored.sort(key=lambda t: (t[0], -t[1]), reverse=True)\n+    ordered = [b for _s, _i, b in scored] + tail\n+    joined = \"\".join(ordered)\n+    if lexically.endswith(\"\\n\") and not joined.endswith(\"\\n\"):\n+        joined += \"\\n\"\n+    logger.info(\"Jev search rerank acted on top-%d of %d blocks\", len(head), len(blocks))\n+    return joined\ndiff --git a/src/monitor/lib/ripgrep_search.py b/src/monitor/lib/ripgrep_search.py\nindex 4754b0f..a3ffa6c 100644\n--- a/src/monitor/lib/ripgrep_search.py\n+++ b/src/monitor/lib/ripgrep_search.py\n@@ -198,7 +198,12 @@ def _finalize_search_output(tool_name: str, stdout: str, term: str) -> str:\n         return f\"No matches found. Searched for: {term}\"\n     if stdout.startswith(\"Error\"):\n         return stdout\n-    ranked = rerank_rg_output(stdout, term)\n+    try:\n+        from monitor.lib.jev_search import rerank_rg_output_with_jev\n+\n+        ranked = rerank_rg_output_with_jev(stdout, term)\n+    except Exception:\n+        ranked = rerank_rg_output(stdout, term)\n     return _safe_truncate_output(tool_name, ranked)\n \n \ndiff --git a/tests/monitor/lib/test_jev_search.py b/tests/monitor/lib/test_jev_search.py\nnew file mode 100644\nindex 0000000..634a5c4\n--- /dev/null\n+++ b/tests/monitor/lib/test_jev_search.py\n@@ -0,0 +1,37 @@\n+\"\"\"Tests for Jev search top-K Score reorder.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import patch\n+\n+import pytest\n+\n+from monitor.lib import jev_search as jsearch\n+\n+\n+@pytest.fixture(autouse=True)\n+def _clear_jev_env(monkeypatch):\n+    monkeypatch.delenv(\"TYPESAFE_API_KEY\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV_CONFIDENCE\", raising=False)\n+\n+\n+def test_search_disabled_lexical_only():\n+    stdout = \"a.py\\n1: foo\\n\\nb.py\\n1: bar\\n\"\n+    out = jsearch.rerank_rg_output_with_jev(stdout, \"foo bar\")\n+    assert \"a.py\" in out or \"b.py\" in out\n+\n+\n+@patch(\"monitor.lib.jev_search.tc.system_one\")\n+def test_search_jev_reorders(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.5\")\n+    stdout = \"noise.py\\n1: unrelated\\n\\nhit.py\\n1: target symbol\\n\"\n+    mock_system_one.return_value = {\n+        \"answers\": {\n+            \"blk_0\": {\"type\": \"score\", \"score\": 0.5, \"confidence\": 0.9},\n+            \"blk_1\": {\"type\": \"score\", \"score\": 2.8, \"confidence\": 0.9},\n+        }\n+    }\n+    out = jsearch.rerank_rg_output_with_jev(stdout, \"target symbol\")\n+    assert out.find(\"hit.py\") < out.find(\"noise.py\") or \"hit.py\" in out\n",
+        "stats": {
+          "deletions": 1,
+          "files": [
+            {
+              "additions": 95,
+              "deletions": 0,
+              "path": "src/monitor/lib/jev_search.py",
+              "status": "A"
+            },
+            {
+              "additions": 6,
+              "deletions": 1,
+              "path": "src/monitor/lib/ripgrep_search.py",
+              "status": "M"
+            },
+            {
+              "additions": 37,
+              "deletions": 0,
+              "path": "tests/monitor/lib/test_jev_search.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 138
+        },
+        "truncated": false
+      },
+      "features": [
+        "Optional Jev-based relevance reranking for the top 10 search matches",
+        "Low-confidence or failed scoring falls back to lexical ranking",
+        "Search output remains available when Jev integration encounters errors"
+      ],
+      "is_head": false,
+      "sha": "14971bdef9cc199a5dd04d0a96c9123def0d1ad3",
+      "short_sha": "14971bd",
+      "subject": "Add Jev search top-K Score reorder",
+      "summary": "Code search results are first ranked lexically, then optionally reordered by Jev relevance scores for the top 10 matches. If Jev is disabled, unavailable, or returns low-confidence results, the existing lexical ordering is preserved."
+    },
+    {
+      "authored_at": "2026-09-26T15:15:00-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "On update_todo to done, Noul can return guidance when criteria\nlook unmet instead of silently accepting completion. Soft-fail\nallows done so bookkeeping still works without Jev.\n",
+        "patch": "diff --git a/src/monitor/lib/jev_acceptance.py b/src/monitor/lib/jev_acceptance.py\nnew file mode 100644\nindex 0000000..f3c85f3\n--- /dev/null\n+++ b/src/monitor/lib/jev_acceptance.py\n@@ -0,0 +1,73 @@\n+\"\"\"Jev acceptance gate when marking a todo done (steer-only).\"\"\"\n+\n+from __future__ import annotations\n+\n+import logging\n+from typing import Any, Mapping, Optional\n+\n+from monitor.lib import typesafe_client as tc\n+\n+logger = logging.getLogger(__name__)\n+\n+QUESTION_ID = \"acceptance_met\"\n+\n+\n+def maybe_steer_todo_done(\n+    todo_entry: Mapping[str, Any],\n+    *,\n+    acceptance_criteria: list | None = None,\n+    recent_context: str | None = None,\n+) -> Optional[str]:\n+    \"\"\"Return guidance if done looks premature; None to allow the status change.\n+\n+    Soft-fail allows done (pre-Jev behavior).\n+    \"\"\"\n+    if not tc.is_enabled():\n+        return None\n+\n+    item = str(todo_entry.get(\"item\") or \"\").strip()\n+    notes = str(todo_entry.get(\"notes\") or \"\").strip()\n+    if not item:\n+        return None\n+\n+    criteria = acceptance_criteria or []\n+    criteria_text = \"\\n\".join(f\"- {c}\" for c in criteria[:12] if c)\n+\n+    state = {\n+        \"todo_item\": item[:1500],\n+        \"todo_notes\": notes[:1000],\n+        \"acceptance_criteria\": criteria_text[:2000] or \"(none recorded)\",\n+    }\n+    if recent_context:\n+        state[\"recent_context\"] = recent_context[:2000]\n+\n+    response = tc.system_one(\n+        state,\n+        {\n+            QUESTION_ID: {\n+                \"type\": \"noul\",\n+                \"instructions\": (\n+                    \"The coding agent wants to mark this todo done. Given the \"\n+                    \"item, notes, and acceptance criteria, has the work likely \"\n+                    \"been completed adequately?\"\n+                ),\n+                \"criteria\": {\n+                    \"true\": \"Acceptable to mark done\",\n+                    \"false\": \"Premature — criteria or work still incomplete\",\n+                },\n+            }\n+        },\n+    )\n+    noul = tc.noul_answer(response, QUESTION_ID)\n+    if noul is None:\n+        return None\n+    floor = tc.confidence_floor()\n+    if noul >= floor:\n+        return None\n+\n+    logger.info(\"Jev acceptance_met low noul=%.3f; steering away from done\", noul)\n+    return (\n+        \"[jev_acceptance] Marking this todo done looks premature relative to \"\n+        \"the item/acceptance criteria. Keep it in_progress (or blocked) and \"\n+        \"finish the remaining work before setting status=done.\"\n+    )\ndiff --git a/src/monitor/lib/todo.py b/src/monitor/lib/todo.py\nindex bf76f99..88d3ad2 100644\n--- a/src/monitor/lib/todo.py\n+++ b/src/monitor/lib/todo.py\n@@ -544,6 +544,36 @@ def update_todo(\n             }\n         )\n \n+    marking_done = (\n+        status is not None\n+        and str(status).strip().lower() == \"done\"\n+        and before.get(\"status\") != status\n+    )\n+    if marking_done:\n+        try:\n+            from monitor.lib.jev_acceptance import maybe_steer_todo_done\n+\n+            context = _read_task_context(session_id)\n+            steer = maybe_steer_todo_done(\n+                before,\n+                acceptance_criteria=context.get(\"acceptance_criteria\") or [],\n+            )\n+            if steer:\n+                _print_todo_action(\"!\", f\"{id} jev acceptance steer\")\n+                return json.dumps(\n+                    {\n+                        \"ok\": False,\n+                        \"action\": \"update_todo\",\n+                        \"error\": \"jev_acceptance_steer\",\n+                        \"reason\": steer,\n+                        \"session_id\": session_id,\n+                        \"id\": id,\n+                        \"jev_notice\": steer,\n+                    }\n+                )\n+        except Exception:\n+            logger.debug(\"Jev acceptance gate failed\", exc_info=True)\n+\n     if status is not None:\n         todos[index][\"status\"] = status\n     if item:\ndiff --git a/tests/monitor/lib/test_jev_acceptance.py b/tests/monitor/lib/test_jev_acceptance.py\nnew file mode 100644\nindex 0000000..1b63a43\n--- /dev/null\n+++ b/tests/monitor/lib/test_jev_acceptance.py\n@@ -0,0 +1,57 @@\n+\"\"\"Tests for Jev acceptance done steer.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import patch\n+\n+import pytest\n+\n+from monitor.lib import jev_acceptance as jacc\n+\n+\n+@pytest.fixture(autouse=True)\n+def _clear_jev_env(monkeypatch):\n+    monkeypatch.delenv(\"TYPESAFE_API_KEY\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV_CONFIDENCE\", raising=False)\n+\n+\n+def test_acceptance_disabled_allows():\n+    assert (\n+        jacc.maybe_steer_todo_done(\n+            {\"item\": \"Ship feature\", \"notes\": \"\"},\n+            acceptance_criteria=[\"tests pass\"],\n+        )\n+        is None\n+    )\n+\n+\n+@patch(\"monitor.lib.jev_acceptance.tc.system_one\")\n+def test_acceptance_low_noul_steers(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"acceptance_met\": {\"type\": \"noul\", \"noul\": 0.2}}\n+    }\n+    steer = jacc.maybe_steer_todo_done(\n+        {\"item\": \"Add OAuth\", \"notes\": \"started\"},\n+        acceptance_criteria=[\"OAuth works end-to-end\"],\n+    )\n+    assert steer is not None\n+    assert \"jev_acceptance\" in steer\n+\n+\n+@patch(\"monitor.lib.jev_acceptance.tc.system_one\")\n+def test_acceptance_high_noul_allows(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"acceptance_met\": {\"type\": \"noul\", \"noul\": 0.95}}\n+    }\n+    assert (\n+        jacc.maybe_steer_todo_done(\n+            {\"item\": \"Add OAuth\", \"notes\": \"done and tested\"},\n+            acceptance_criteria=[\"OAuth works\"],\n+        )\n+        is None\n+    )\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 73,
+              "deletions": 0,
+              "path": "src/monitor/lib/jev_acceptance.py",
+              "status": "A"
+            },
+            {
+              "additions": 30,
+              "deletions": 0,
+              "path": "src/monitor/lib/todo.py",
+              "status": "M"
+            },
+            {
+              "additions": 57,
+              "deletions": 0,
+              "path": "tests/monitor/lib/test_jev_acceptance.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 160
+        },
+        "truncated": false
+      },
+      "features": [
+        "Acceptance review before marking todos done",
+        "Steering response for prematurely completed work",
+        "Optional Jev-based confidence threshold",
+        "Graceful fallback when the acceptance check fails"
+      ],
+      "is_head": false,
+      "sha": "8d168cdd173a0910351d50eed6fb5375eebe2c53",
+      "short_sha": "8d168cd",
+      "subject": "Add Jev acceptance done steer",
+      "summary": "Adds an optional acceptance check when a todo is marked done. If enabled and the work appears incomplete, the update is rejected with guidance to keep the todo in progress or blocked; failures in the check still allow the status change."
+    },
+    {
+      "authored_at": "2026-09-26T15:15:00-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "When discovered work looks like a material expansion, Noul can\ninject a pause/confirm notice on add_discovered_work. Soft-fail\ntrusts the model's material flag so existing flow is unchanged.\n",
+        "patch": "diff --git a/src/monitor/lib/jev_scope.py b/src/monitor/lib/jev_scope.py\nnew file mode 100644\nindex 0000000..0f262fb\n--- /dev/null\n+++ b/src/monitor/lib/jev_scope.py\n@@ -0,0 +1,71 @@\n+\"\"\"Jev Noul for material scope-growth pauses on discovered work.\"\"\"\n+\n+from __future__ import annotations\n+\n+import logging\n+from typing import Optional\n+\n+from monitor.lib import typesafe_client as tc\n+\n+logger = logging.getLogger(__name__)\n+\n+QUESTION_ID = \"is_material_scope_growth\"\n+\n+_PAUSE_NOTICE = (\n+    \"[jev_scope] Newly discovered work looks like a material expansion of the \"\n+    \"original ask. Pause and confirm with the user before absorbing it into \"\n+    \"the plan or starting that work.\"\n+)\n+\n+\n+def should_pause_for_scope(\n+    item: str,\n+    *,\n+    material: bool = False,\n+    scope_summary: str | None = None,\n+) -> Optional[str]:\n+    \"\"\"Return a pause notice string when Jev says scope grew materially.\n+\n+    Soft-fail returns None (trust the model's ``material`` flag / no pause).\n+    \"\"\"\n+    if not tc.is_enabled():\n+        return None\n+\n+    text = (scope_summary or item or \"\").strip()\n+    if not text:\n+        return None\n+\n+    # Always ask when material=true; also ask when false but item looks large.\n+    if not material and len(text) < 80:\n+        return None\n+\n+    response = tc.system_one(\n+        {\n+            \"discovered_item\": (item or \"\")[:1500],\n+            \"scope_summary\": (scope_summary or \"\")[:1500],\n+            \"model_claimed_material\": material,\n+        },\n+        {\n+            QUESTION_ID: {\n+                \"type\": \"noul\",\n+                \"instructions\": (\n+                    \"Does this newly discovered work materially expand the \"\n+                    \"original coding task (new feature area, large refactor, \"\n+                    \"cross-cutting work) such that the user should confirm \"\n+                    \"before the agent absorbs it?\"\n+                ),\n+                \"criteria\": {\n+                    \"true\": \"Material expansion — pause and confirm\",\n+                    \"false\": \"Minor discovery — safe to track without pausing\",\n+                },\n+            }\n+        },\n+    )\n+    noul = tc.noul_answer(response, QUESTION_ID)\n+    if noul is None:\n+        return None\n+    floor = tc.confidence_floor()\n+    if noul >= floor:\n+        logger.info(\"Jev material scope pause noul=%.3f\", noul)\n+        return _PAUSE_NOTICE\n+    return None\ndiff --git a/src/monitor/lib/todo.py b/src/monitor/lib/todo.py\nindex 554a46b..bf76f99 100644\n--- a/src/monitor/lib/todo.py\n+++ b/src/monitor/lib/todo.py\n@@ -264,6 +264,7 @@ def add_discovered_work(\n         _print_todo_action(\"~\", f\"{existing.get('id')} discovered work already tracked\")\n \n     scope_change = None\n+    jev_notice = None\n     if material or scope_summary:\n         scope_text = str(scope_summary or item_text).strip()\n         if scope_text:\n@@ -279,18 +280,29 @@ def add_discovered_work(\n                 \"!\",\n                 f\"scope {'material' if material else 'minor'} {scope_change['summary']}\",\n             )\n+    try:\n+        from monitor.lib.jev_scope import should_pause_for_scope\n \n-    return json.dumps(\n-        {\n-            \"ok\": True,\n-            \"action\": \"add_discovered_work\",\n-            \"session_id\": session_id,\n-            \"created\": created,\n-            \"todo\": existing,\n-            \"scope_change\": scope_change,\n-            \"count\": len(todos),\n-        }\n-    )\n+        jev_notice = should_pause_for_scope(\n+            item_text, material=material, scope_summary=scope_summary\n+        )\n+        if jev_notice:\n+            _print_todo_action(\"!\", \"jev scope pause — confirm with user\")\n+    except Exception:\n+        logger.debug(\"Jev scope gate failed\", exc_info=True)\n+\n+    payload = {\n+        \"ok\": True,\n+        \"action\": \"add_discovered_work\",\n+        \"session_id\": session_id,\n+        \"created\": created,\n+        \"todo\": existing,\n+        \"scope_change\": scope_change,\n+        \"count\": len(todos),\n+    }\n+    if jev_notice:\n+        payload[\"jev_notice\"] = jev_notice\n+    return json.dumps(payload)\n \n \n def get_task_context(*, emit_summary: bool = True) -> str:\ndiff --git a/tests/monitor/lib/test_jev_scope.py b/tests/monitor/lib/test_jev_scope.py\nnew file mode 100644\nindex 0000000..72ae8b8\n--- /dev/null\n+++ b/tests/monitor/lib/test_jev_scope.py\n@@ -0,0 +1,41 @@\n+\"\"\"Tests for Jev material scope-growth pause.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import patch\n+\n+import pytest\n+\n+from monitor.lib import jev_scope as js\n+\n+\n+@pytest.fixture(autouse=True)\n+def _clear_jev_env(monkeypatch):\n+    monkeypatch.delenv(\"TYPESAFE_API_KEY\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV_CONFIDENCE\", raising=False)\n+\n+\n+def test_scope_disabled_no_pause():\n+    assert js.should_pause_for_scope(\"rewrite the auth system\", material=True) is None\n+\n+\n+@patch(\"monitor.lib.jev_scope.tc.system_one\")\n+def test_scope_pause_on_high_noul(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"is_material_scope_growth\": {\"type\": \"noul\", \"noul\": 0.9}}\n+    }\n+    notice = js.should_pause_for_scope(\n+        \"Also migrate the entire billing subsystem\", material=True\n+    )\n+    assert notice is not None\n+    assert \"jev_scope\" in notice\n+\n+\n+@patch(\"monitor.lib.jev_scope.tc.system_one\")\n+def test_scope_skip_short_non_material(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    assert js.should_pause_for_scope(\"typo fix\", material=False) is None\n+    mock_system_one.assert_not_called()\n",
+        "stats": {
+          "deletions": 11,
+          "files": [
+            {
+              "additions": 71,
+              "deletions": 0,
+              "path": "src/monitor/lib/jev_scope.py",
+              "status": "A"
+            },
+            {
+              "additions": 23,
+              "deletions": 11,
+              "path": "src/monitor/lib/todo.py",
+              "status": "M"
+            },
+            {
+              "additions": 41,
+              "deletions": 0,
+              "path": "tests/monitor/lib/test_jev_scope.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 135
+        },
+        "truncated": false
+      },
+      "features": [
+        "Pauses for confirmation when discovered work appears to materially expand the task",
+        "Includes a Jev scope-pause notice in discovered-work responses",
+        "Skips model checks for short, non-material discoveries",
+        "Soft-fails when Jev is disabled or unavailable"
+      ],
+      "is_head": false,
+      "sha": "a660f0115c081e52cd8aa593522e6f3087d64e3f",
+      "short_sha": "a660f01",
+      "subject": "Add Jev material scope-growth pause",
+      "summary": "Adds a Jev-powered check for newly discovered work that may materially expand the original task. When the check reaches the configured confidence threshold, the work item response includes a notice and prompts the user to confirm before proceeding; failures in the optional check do not block normal work tracking."
+    },
+    {
+      "authored_at": "2026-09-26T15:14:46-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Keyword heuristics stay primary; Jev confirms bumps and can\npromote mid-length ambiguous turns. Soft-fail keeps the old\nheuristic so routine turns are unchanged when Jev is off.\n",
+        "patch": "diff --git a/src/monitor/core/conversation.py b/src/monitor/core/conversation.py\nindex cfb88da..929ab44 100644\n--- a/src/monitor/core/conversation.py\n+++ b/src/monitor/core/conversation.py\n@@ -1296,7 +1296,6 @@ def prepare_query_context(user_prompt):\n     # call_litellm_completion as override-or-default and lasts for every LLM\n     # call within this user turn (including tool-chain follow-ups).\n     try:\n-        from monitor.lib.reasoning_heuristic import detect_reasoning_bump\n         config.CURRENT_TURN_REASONING_OVERRIDE = None\n         stripped_user_prompt = user_prompt.rstrip()\n         explicit_adv_flag = \" --adv\"\n@@ -1316,8 +1315,11 @@ def prepare_query_context(user_prompt):\n             # heuristic so the bump target — and the gate that decides whether\n             # to fire at all — both reflect it. This is what lets a steady\n             # \"medium\" config still bump (to the floored target) on hard turns.\n+            # Jev Noul confirms heuristic bumps and can promote mid-band asks.\n             bump_floor = getattr(config, \"REASONING_BUMP_EFFORT\", None)\n-            bump = detect_reasoning_bump(\n+            from monitor.lib.jev_reasoning_bump import resolve_reasoning_bump\n+\n+            bump = resolve_reasoning_bump(\n                 user_prompt,\n                 getattr(config, \"REASONING_EFFORT\", None),\n                 bump_floor=bump_floor,\n@@ -1327,7 +1329,7 @@ def prepare_query_context(user_prompt):\n                 logger.info(\n                     \"Auto-bumped reasoning effort to %s for this turn (%s).\",\n                     bump,\n-                    \"matched complexity signals\",\n+                    \"heuristic/Jev\",\n                 )\n                 print(f\"{yellow}[reasoning → {bump}] matched complexity signals{reset}\")\n     except Exception:\ndiff --git a/src/monitor/lib/jev_reasoning_bump.py b/src/monitor/lib/jev_reasoning_bump.py\nnew file mode 100644\nindex 0000000..57b3908\n--- /dev/null\n+++ b/src/monitor/lib/jev_reasoning_bump.py\n@@ -0,0 +1,108 @@\n+\"\"\"Jev Noul backstop for proactive per-turn reasoning bumps.\n+\n+Keyword/length heuristics stay primary. Jev confirms heuristic bumps and\n+can promote mid-length ambiguous asks that the heuristic missed.\n+\"\"\"\n+\n+from __future__ import annotations\n+\n+import logging\n+from typing import Optional\n+\n+from monitor.lib import typesafe_client as tc\n+from monitor.lib.reasoning_heuristic import (\n+    LENGTH_THRESHOLD,\n+    LINE_COUNT_THRESHOLD,\n+    _effective_bump_target,\n+    detect_reasoning_bump,\n+)\n+\n+logger = logging.getLogger(__name__)\n+\n+QUESTION_ID = \"should_bump_reasoning\"\n+\n+# Mid-band: too long for a one-liner, below the hard length trigger.\n+_MID_LEN_LOW = 200\n+\n+\n+def _is_mid_ambiguous(user_text: str) -> bool:\n+    n = len(user_text)\n+    lines = user_text.count(\"\\n\") + 1\n+    if _MID_LEN_LOW <= n <= LENGTH_THRESHOLD:\n+        return True\n+    if 2 <= lines <= LINE_COUNT_THRESHOLD:\n+        return True\n+    return False\n+\n+\n+def _noul_should_bump(user_text: str) -> Optional[bool]:\n+    \"\"\"Return True/False when Jev acts; None on soft-fail.\"\"\"\n+    if not tc.is_enabled():\n+        return None\n+    response = tc.system_one(\n+        {\"user_turn\": user_text[:2000]},\n+        {\n+            QUESTION_ID: {\n+                \"type\": \"noul\",\n+                \"instructions\": (\n+                    \"Should the coding agent raise reasoning effort for this \"\n+                    \"user turn (deeper thinking for diagnosis, design, or \"\n+                    \"multi-step correctness)?\"\n+                ),\n+                \"criteria\": {\n+                    \"true\": \"Hard / diagnostic / high-stakes; bump effort\",\n+                    \"false\": \"Routine edit or simple ask; keep default effort\",\n+                },\n+            }\n+        },\n+    )\n+    noul = tc.noul_answer(response, QUESTION_ID)\n+    if noul is None:\n+        return None\n+    floor = tc.confidence_floor()\n+    return noul >= floor\n+\n+\n+def resolve_reasoning_bump(\n+    user_text: str | None,\n+    current_effort: str | None,\n+    bump_floor=None,\n+) -> Optional[str]:\n+    \"\"\"Return bump target effort, or None to leave default.\n+\n+    Soft-fail preserves ``detect_reasoning_bump`` behavior.\n+    \"\"\"\n+    if not user_text or not isinstance(user_text, str):\n+        return None\n+\n+    target = _effective_bump_target(bump_floor)\n+    heuristic = detect_reasoning_bump(user_text, current_effort, bump_floor=bump_floor)\n+\n+    if heuristic:\n+        decision = _noul_should_bump(user_text)\n+        if decision is None:\n+            return heuristic\n+        if decision:\n+            logger.info(\"Jev confirmed reasoning bump → %s\", heuristic)\n+            return heuristic\n+        logger.info(\"Jev declined heuristic reasoning bump; keeping default\")\n+        return None\n+\n+    # Heuristic miss: optional mid-band promotion.\n+    if not _is_mid_ambiguous(user_text):\n+        return None\n+\n+    # Only if bump would actually raise effort.\n+    from monitor.lib.reasoning_heuristic import _EFFORT_RANK, _BUMP_TARGET\n+\n+    current_rank = _EFFORT_RANK.get(\n+        (current_effort or \"\").lower(), _EFFORT_RANK[\"low\"]\n+    )\n+    if current_rank >= _EFFORT_RANK.get(target, _EFFORT_RANK[_BUMP_TARGET]):\n+        return None\n+\n+    decision = _noul_should_bump(user_text)\n+    if decision is True:\n+        logger.info(\"Jev mid-band reasoning bump → %s\", target)\n+        return target\n+    return None\ndiff --git a/tests/monitor/lib/test_jev_reasoning_bump.py b/tests/monitor/lib/test_jev_reasoning_bump.py\nnew file mode 100644\nindex 0000000..3cadedf\n--- /dev/null\n+++ b/tests/monitor/lib/test_jev_reasoning_bump.py\n@@ -0,0 +1,58 @@\n+\"\"\"Tests for Jev reasoning-bump Noul backstop.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import patch\n+\n+import pytest\n+\n+from monitor.lib import jev_reasoning_bump as jrb\n+\n+\n+@pytest.fixture(autouse=True)\n+def _clear_jev_env(monkeypatch):\n+    monkeypatch.delenv(\"TYPESAFE_API_KEY\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV\", raising=False)\n+    monkeypatch.delenv(\"MONITOR_JEV_CONFIDENCE\", raising=False)\n+\n+\n+def test_reasoning_bump_disabled_uses_heuristic():\n+    out = jrb.resolve_reasoning_bump(\n+        \"Please find the bug in the auth flow\",\n+        \"low\",\n+    )\n+    assert out is not None\n+\n+\n+@patch(\"monitor.lib.jev_reasoning_bump.tc.system_one\")\n+def test_reasoning_bump_jev_confirms(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"should_bump_reasoning\": {\"type\": \"noul\", \"noul\": 0.9}}\n+    }\n+    out = jrb.resolve_reasoning_bump(\"find the bug in login\", \"low\")\n+    assert out is not None\n+\n+\n+@patch(\"monitor.lib.jev_reasoning_bump.tc.system_one\")\n+def test_reasoning_bump_jev_declines_heuristic(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"should_bump_reasoning\": {\"type\": \"noul\", \"noul\": 0.1}}\n+    }\n+    out = jrb.resolve_reasoning_bump(\"find the bug in login\", \"low\")\n+    assert out is None\n+\n+\n+@patch(\"monitor.lib.jev_reasoning_bump.tc.system_one\")\n+def test_reasoning_bump_mid_band_promotes(mock_system_one, monkeypatch):\n+    monkeypatch.setenv(\"TYPESAFE_API_KEY\", \"ts\")\n+    monkeypatch.setenv(\"MONITOR_JEV_CONFIDENCE\", \"0.6\")\n+    mock_system_one.return_value = {\n+        \"answers\": {\"should_bump_reasoning\": {\"type\": \"noul\", \"noul\": 0.95}}\n+    }\n+    text = \"x\" * 250\n+    out = jrb.resolve_reasoning_bump(text, \"low\")\n+    assert out is not None\n",
+        "stats": {
+          "deletions": 3,
+          "files": [
+            {
+              "additions": 5,
+              "deletions": 3,
+              "path": "src/monitor/core/conversation.py",
+              "status": "M"
+            },
+            {
+              "additions": 108,
+              "deletions": 0,
+              "path": "src/monitor/lib/jev_reasoning_bump.py",
+              "status": "A"
+            },
+            {
+              "additions": 58,
+              "deletions": 0,
+              "path": "tests/monitor/lib/test_jev_reasoning_bump.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 171
+        },
+        "truncated": false
+      },
+      "features": [
+        "Jev confirmation for heuristic reasoning bumps",
+        "Jev promotion of eligible mid-length or multi-line requests",
+        "Graceful fallback to existing heuristic behavior when Jev is unavailable",
+        "Tests covering enabled, disabled, confirming, declining, and mid-band promotion cases"
+      ],
+      "is_head": false,
+      "sha": "395f5d17ef1d6921814e477635ad1b5f0715b41b",
+      "short_sha": "395f5d1",
+      "subject": "Add Jev reasoning-bump Noul backstop",
+      "summary": "Reasoning-effort auto-bumps now use Jev as a backstop to validate heuristic triggers and identify some ambiguous mid-length requests that heuristics miss. If Jev is unavailable, existing heuristic behavior is preserved."
+    }
+  ],
+  "updated_at": "2026-09-29T17:26:36.825492+00:00",
+  "working_tree": {
+    "clean": true,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": []
+  }
+}
