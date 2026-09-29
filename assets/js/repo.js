@@ -125,7 +125,7 @@
           '<td class="small text-secondary">' +
           SB.escapeHtml(SB.formatWhen(c.authored_at)) +
           "</td>" +
-          "<td>" +
+          '<td class="sb-story-cell">' +
           summary +
           "</td>" +
           '<td class="sb-features-cell small">' +
