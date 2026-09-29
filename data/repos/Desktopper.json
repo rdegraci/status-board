@@ -1,0 +1,311 @@
+{
+  "ahead_count": 6,
+  "base_ref": "last-pushed → 94d9d3e (local HEAD~6; fully pushed (origin/main))",
+  "base_sha": "94d9d3e91086d83c6c5d6e394bedfd9bd03cc7d0",
+  "branch": "main",
+  "commit_count": 6,
+  "files_touched_total": 10,
+  "future_steps": [
+    {
+      "text": "Add a clear empty-state and configuration error for calendar widgets that lack a valid date column or reference a deleted field."
+    },
+    {
+      "text": "Define timezone handling for date and datetime values so records appear on the expected day for users in different locales."
+    },
+    {
+      "text": "Add a “Today” control and a quick return to the current month after browsing other months."
+    },
+    {
+      "text": "Support keyboard navigation and accessible labels for month controls, day cells, overflow indicators, and clickable entries."
+    },
+    {
+      "text": "Apply the same record permissions and business-rule visibility checks used by forms when loading calendar entries."
+    },
+    {
+      "text": "Add focused automated coverage for month boundaries, leap years, dates with time components, overflow behavior, and custom title columns."
+    },
+    {
+      "text": "Document the package installation and desktop command in the project’s primary getting-started flow, including development versus production invocation."
+    }
+  ],
+  "head_sha": "4d7a3776ae185e4308f0356689beccbe44d3556a",
+  "head_story": {
+    "features": [
+      "Install the app with editable package installation",
+      "Launch the server with the `desktopper` command",
+      "Display a calendar widget as a Monday-first month grid",
+      "Navigate to previous and next calendar months",
+      "See records placed on their matching dates",
+      "Open a record’s form by clicking its calendar entry",
+      "Show overflow counts when a day has more than three records",
+      "Use a custom title column for calendar entries",
+      "Manage business rules from the Ops Business rules panel"
+    ],
+    "text": "Home dashboards now show calendar widgets as navigable month grids, with dated records grouped by day and clickable entries that open their forms. Users can move between months, see overflow counts for busy days, and choose a custom display column for calendar items. The app can also be installed as a package and launched with the `desktopper` command, with updated guidance for managing business rules and calendar dashboards."
+  },
+  "range_label": "94d9d3e..4d7a377",
+  "repo": {
+    "id": "Desktopper",
+    "name": "Desktopper",
+    "path": "/Users/rdegraci/Hack/desktopper",
+    "remote": "github-personal/rdegraci/Desktopper"
+  },
+  "schema_version": 1,
+  "source": "MBP-64GB.local",
+  "spine": [
+    {
+      "authored_at": "2026-09-05T21:36:05-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Contract checks lock the month-grid markers and layout.css\nlink so the shell calendar does not regress to a plain list.\n",
+        "patch": "diff --git a/tests/test_calendar_ux.py b/tests/test_calendar_ux.py\nnew file mode 100644\nindex 0000000..589e15a\n--- /dev/null\n+++ b/tests/test_calendar_ux.py\n@@ -0,0 +1,55 @@\n+\"\"\"Layout calendar month-grid: static contract.\"\"\"\n+\n+from __future__ import annotations\n+\n+import os\n+import tempfile\n+import unittest\n+from pathlib import Path\n+\n+from app.config import load_config, repo_root\n+from app.host_db import ensure_host_tables\n+from app.server import create_app\n+\n+\n+class CalendarUxTests(unittest.TestCase):\n+    def setUp(self) -> None:\n+        self.tmp = tempfile.TemporaryDirectory()\n+        self.appdir = Path(self.tmp.name) / \"appdir\"\n+        self.appdir.mkdir()\n+        os.environ[\"DESKTOPPER_APPDIR\"] = str(self.appdir)\n+        self.cfg = load_config()\n+        ensure_host_tables(self.cfg.appdir)\n+        self.flask_app = create_app()\n+        self.client = self.flask_app.test_client()\n+\n+    def tearDown(self) -> None:\n+        os.environ.pop(\"DESKTOPPER_APPDIR\", None)\n+        self.tmp.cleanup()\n+\n+    def test_layout_js_has_month_grid_markers(self) -> None:\n+        path = repo_root() / \"static\" / \"js\" / \"layout.js\"\n+        text = path.read_text(encoding=\"utf-8\")\n+        self.assertIn(\"calendar-grid\", text)\n+        self.assertIn(\"calendarMonthMatrix\", text)\n+        self.assertIn(\"calendarDateKey\", text)\n+        self.assertIn(\"#form/\", text)\n+        self.assertIn('text: \"Prev\"', text)\n+        self.assertIn('text: \"Next\"', text)\n+        js = self.client.get(\"/js/layout.js\").get_data(as_text=True)\n+        self.assertIn(\"calendar-grid\", js)\n+        self.assertIn(\"#form/\", js)\n+\n+    def test_layout_css_served_and_linked(self) -> None:\n+        css_path = repo_root() / \"static\" / \"css\" / \"layout.css\"\n+        css_text = css_path.read_text(encoding=\"utf-8\")\n+        self.assertIn(\".calendar-grid\", css_text)\n+        css = self.client.get(\"/css/layout.css\")\n+        self.assertEqual(css.status_code, 200)\n+        self.assertIn(\".calendar-grid\", css.get_data(as_text=True))\n+        index = self.client.get(\"/\").get_data(as_text=True)\n+        self.assertIn(\"/css/layout.css\", index)\n+\n+\n+if __name__ == \"__main__\":\n+    unittest.main()\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 55,
+              "deletions": 0,
+              "path": "tests/test_calendar_ux.py",
+              "status": "A"
+            }
+          ],
+          "files_changed": 1,
+          "insertions": 55
+        },
+        "truncated": false
+      },
+      "features": [],
+      "is_head": true,
+      "sha": "4d7a3776ae185e4308f0356689beccbe44d3556a",
+      "short_sha": "4d7a377",
+      "subject": "Add calendar widget UX tests",
+      "summary": "Adds calendar UX tests that verify the month-grid markers, navigation controls, and date form links are present in the layout, and that the calendar styling is served and linked from the application."
+    },
+    {
+      "authored_at": "2026-09-05T21:35:55-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Day-to-day operators need the same month-grid click-to-form\nnote that README and the Ops prompt already describe.\n",
+        "patch": "diff --git a/docs/OPERATOR-GUIDE.md b/docs/OPERATOR-GUIDE.md\nindex b46b576..3c62181 100644\n--- a/docs/OPERATOR-GUIDE.md\n+++ b/docs/OPERATOR-GUIDE.md\n@@ -142,6 +142,7 @@ You cannot create another account with role `owner` through the Users panel.\n - Use hash routes such as `#list/contacts` and `#form/contacts/1`.\n - After Ops applies a schema change, return to Home and **refresh**. Home does not live-update.\n - Navbar **Ops** opens `/ops` in the same tab. The app does not redirect `/` to Ops by itself.\n+- Layout dashboards may include a **kanban** (drag status, click to open form) and a **calendar** month grid (prev/next, click item to open form).\n - Unread notices show on the navbar badge when reminders or rules create them.\n - CSV import appears on Home only when import profiles exist in schema.\n - Login is required for owner-only actions and for grant-aware visibility beyond guest.\n",
+        "stats": {
+          "deletions": 0,
+          "files": [
+            {
+              "additions": 1,
+              "deletions": 0,
+              "path": "docs/OPERATOR-GUIDE.md",
+              "status": "M"
+            }
+          ],
+          "files_changed": 1,
+          "insertions": 1
+        },
+        "truncated": false
+      },
+      "features": [
+        "Home dashboards can include a calendar month view",
+        "Calendar items can be opened by clicking them",
+        "Calendar months support previous/next navigation",
+        "Kanban items support drag-and-drop status changes"
+      ],
+      "is_head": false,
+      "sha": "4d159171ad76e86654076c771541c7713f3a7f86",
+      "short_sha": "4d15917",
+      "subject": "Document Home calendar in operator guide",
+      "summary": "Updates the operator guide to document the Home dashboard’s calendar and kanban interactions, including navigating months, opening items, and changing kanban status."
+    },
+    {
+      "authored_at": "2026-09-05T21:35:34-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Operators and the Ops model need to know the calendar widget is\na month grid with click-to-form, matching the Home shell.\n",
+        "patch": "diff --git a/README.md b/README.md\nindex cb2db40..c1f272b 100644\n--- a/README.md\n+++ b/README.md\n@@ -192,7 +192,7 @@ Peer sync logs row changes to `_sync_events`. On Ops, **Sync export** writes eve\n \n ## Layouts\n \n-`add_layouts` defines the home dashboard. Widgets include **metric**, **notices**, **reminders**, **text**, **table** links, **kanban**, and **calendar**. Home renders the layout named by `app.home` when it points at a layout id instead of a list screen. The **kanban** widget shows every enum value as a column (including empty ones); drag a card to update that status field, or click a card to open its form.\n+`add_layouts` defines the home dashboard. Widgets include **metric**, **notices**, **reminders**, **text**, **table** links, **kanban**, and **calendar**. Home renders the layout named by `app.home` when it points at a layout id instead of a list screen. The **kanban** widget shows every enum value as a column (including empty ones); drag a card to update that status field, or click a card to open its form. The **calendar** widget is a month grid (prev/next) for a table date column; click an item to open its form.\n \n ## Reset local data\n \ndiff --git a/app/system_prompt.py b/app/system_prompt.py\nindex 99888a4..eaa01eb 100644\n--- a/app/system_prompt.py\n+++ b/app/system_prompt.py\n@@ -619,7 +619,7 @@ Also add a screen:\n - `table` requires `table` or `screen`\n - `form` requires `table` or `screen`\n - `kanban` requires `table`, enum `column`, `title_column`. On Home, users drag cards between status columns to update that column and click a card to open its form.\n-- `calendar` requires `table` and date `column`\n+- `calendar` requires `table` and date `column`. Optional `title_column` (default `title`). On Home, the widget is a **month grid** (prev/next); items appear on that date; click an item to open its form.\n - `text` requires `label` plain text. No HTML tags\n - `notices` has no extra fields\n - `reminders` has no extra fields\n",
+        "stats": {
+          "deletions": 2,
+          "files": [
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 1,
+              "deletions": 1,
+              "path": "app/system_prompt.py",
+              "status": "M"
+            }
+          ],
+          "files_changed": 2,
+          "insertions": 2
+        },
+        "truncated": false
+      },
+      "features": [
+        "Calendar widget month grid with previous/next navigation",
+        "Click calendar items to open their forms",
+        "Optional calendar item title field, defaulting to `title`"
+      ],
+      "is_head": false,
+      "sha": "b3409ab49440310dc9342b4ae4a4444fd5d443fb",
+      "short_sha": "b3409ab",
+      "subject": "Document calendar month-grid UX",
+      "summary": "Documents the calendar widget’s month-grid behavior, including previous/next navigation and opening dated items in their forms. Also clarifies that calendar items can use an optional title field, defaulting to `title`."
+    },
+    {
+      "authored_at": "2026-09-05T21:35:04-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Home layouts that use the calendar widget now show a reusable\nmonth grid with prev/next and click-to-form, not only a list.\n",
+        "patch": "diff --git a/static/css/layout.css b/static/css/layout.css\nnew file mode 100644\nindex 0000000..970bfcb\n--- /dev/null\n+++ b/static/css/layout.css\n@@ -0,0 +1,60 @@\n+/* Layout widgets (Home dashboards). Loaded after Bootstrap. */\n+\n+.calendar-grid {\n+  display: grid;\n+  grid-template-columns: repeat(7, minmax(0, 1fr));\n+  gap: 1px;\n+  background: #dee2e6;\n+  border: 1px solid #dee2e6;\n+  border-radius: 0.25rem;\n+  overflow: hidden;\n+}\n+\n+.calendar-weekday {\n+  background: #f8f9fa;\n+  padding: 0.35rem 0.4rem;\n+  font-size: 0.75rem;\n+  font-weight: 600;\n+  text-align: center;\n+  color: #6c757d;\n+}\n+\n+.calendar-day {\n+  background: #fff;\n+  min-height: 5.5rem;\n+  padding: 0.25rem 0.35rem;\n+  display: flex;\n+  flex-direction: column;\n+  gap: 0.1rem;\n+  align-items: stretch;\n+}\n+\n+.calendar-day-outside {\n+  background: #f8f9fa;\n+  color: #adb5bd;\n+}\n+\n+.calendar-day-num {\n+  font-size: 0.75rem;\n+  font-weight: 600;\n+  margin-bottom: 0.15rem;\n+}\n+\n+.calendar-item {\n+  display: block;\n+  width: 100%;\n+  overflow: hidden;\n+  text-overflow: ellipsis;\n+  white-space: nowrap;\n+  font-size: 0.7rem;\n+  line-height: 1.2;\n+  color: #0d6efd;\n+}\n+\n+.calendar-item:hover {\n+  text-decoration: underline !important;\n+}\n+\n+.calendar-more {\n+  font-size: 0.65rem;\n+}\ndiff --git a/static/index.html b/static/index.html\nindex 8cd3810..10fbdad 100644\n--- a/static/index.html\n+++ b/static/index.html\n@@ -5,6 +5,7 @@\n     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n     <title>Desktopper</title>\n     <link rel=\"stylesheet\" href=\"/css/bootstrap.min.css\" />\n+    <link rel=\"stylesheet\" href=\"/css/layout.css\" />\n   </head>\n   <body>\n     <nav class=\"navbar navbar-light bg-light border-bottom\">\ndiff --git a/static/js/layout.js b/static/js/layout.js\nindex 1cf4a19..2b161d2 100644\n--- a/static/js/layout.js\n+++ b/static/js/layout.js\n@@ -350,33 +350,192 @@\n     reload();\n   }\n \n+  function calendarDateKey(value) {\n+    if (value == null || value === \"\") {\n+      return null;\n+    }\n+    var s = String(value).trim();\n+    if (/^\\d{4}-\\d{2}-\\d{2}/.test(s)) {\n+      return s.slice(0, 10);\n+    }\n+    return null;\n+  }\n+\n+  function calendarMonthMatrix(year, monthIndex) {\n+    // monthIndex 0-11; weeks start Monday; always six weeks\n+    var first = new Date(year, monthIndex, 1);\n+    var startOffset = (first.getDay() + 6) % 7;\n+    var start = new Date(year, monthIndex, 1 - startOffset);\n+    var weeks = [];\n+    var d = new Date(start.getFullYear(), start.getMonth(), start.getDate());\n+    var w;\n+    var i;\n+    for (w = 0; w < 6; w++) {\n+      var week = [];\n+      for (i = 0; i < 7; i++) {\n+        week.push({\n+          year: d.getFullYear(),\n+          month: d.getMonth(),\n+          day: d.getDate(),\n+          key:\n+            d.getFullYear() +\n+            \"-\" +\n+            String(d.getMonth() + 1).padStart(2, \"0\") +\n+            \"-\" +\n+            String(d.getDate()).padStart(2, \"0\"),\n+          inMonth: d.getMonth() === monthIndex,\n+        });\n+        d.setDate(d.getDate() + 1);\n+      }\n+      weeks.push(week);\n+    }\n+    return weeks;\n+  }\n+\n   function renderCalendar(col, container) {\n     var table = col.table;\n     var dateCol = col.column;\n+    var titleCol = col.title_column || \"title\";\n+    var maxPerDay = 3;\n     if (!table || !dateCol) {\n-      container.appendChild(el(\"p\", { className: \"text-muted\", text: \"calendar needs table and column\" }));\n+      container.appendChild(\n+        el(\"p\", { className: \"text-muted\", text: \"calendar needs table and column\" })\n+      );\n       return;\n     }\n-    var list = el(\"ul\", { className: \"list-group\" });\n-    container.appendChild(list);\n+\n+    var now = new Date();\n+    var viewYear = now.getFullYear();\n+    var viewMonth = now.getMonth();\n+    var rowsCache = [];\n+\n+    var header = el(\"div\", { className: \"d-flex align-items-center justify-content-between mb-2\" });\n+    var titleEl = el(\"div\", { className: \"fw-semibold\", text: \"\" });\n+    var nav = el(\"div\", { className: \"btn-group btn-group-sm\" });\n+    var prevBtn = el(\"button\", { type: \"button\", className: \"btn btn-outline-secondary\", text: \"Prev\" });\n+    var nextBtn = el(\"button\", { type: \"button\", className: \"btn btn-outline-secondary\", text: \"Next\" });\n+    nav.appendChild(prevBtn);\n+    nav.appendChild(nextBtn);\n+    header.appendChild(titleEl);\n+    header.appendChild(nav);\n+    container.appendChild(header);\n+\n+    var gridHost = el(\"div\", { className: \"calendar-grid-host\" });\n+    container.appendChild(gridHost);\n+\n+    var monthNames = [\n+      \"January\",\n+      \"February\",\n+      \"March\",\n+      \"April\",\n+      \"May\",\n+      \"June\",\n+      \"July\",\n+      \"August\",\n+      \"September\",\n+      \"October\",\n+      \"November\",\n+      \"December\",\n+    ];\n+    var weekdayLabels = [\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\", \"Sun\"];\n+\n+    function bucketByDate(rows) {\n+      var buckets = {};\n+      (rows || []).forEach(function (row) {\n+        var key = calendarDateKey(row[dateCol]);\n+        if (!key) {\n+          return;\n+        }\n+        if (!buckets[key]) {\n+          buckets[key] = [];\n+        }\n+        buckets[key].push(row);\n+      });\n+      return buckets;\n+    }\n+\n+    function paint() {\n+      clear(gridHost);\n+      titleEl.textContent = monthNames[viewMonth] + \" \" + viewYear;\n+      var buckets = bucketByDate(rowsCache);\n+      var matrix = calendarMonthMatrix(viewYear, viewMonth);\n+\n+      var grid = el(\"div\", { className: \"calendar-grid\" });\n+      weekdayLabels.forEach(function (label) {\n+        grid.appendChild(el(\"div\", { className: \"calendar-weekday\", text: label }));\n+      });\n+\n+      matrix.forEach(function (week) {\n+        week.forEach(function (cell) {\n+          var dayClass = \"calendar-day\" + (cell.inMonth ? \"\" : \" calendar-day-outside\");\n+          var dayEl = el(\"div\", { className: dayClass });\n+          dayEl.appendChild(\n+            el(\"div\", { className: \"calendar-day-num\", text: String(cell.day) })\n+          );\n+          var items = buckets[cell.key] || [];\n+          var shown = items.slice(0, maxPerDay);\n+          shown.forEach(function (row) {\n+            var label =\n+              row[titleCol] != null && row[titleCol] !== \"\"\n+                ? String(row[titleCol])\n+                : \"#\" + row.id;\n+            var itemBtn = el(\"button\", {\n+              type: \"button\",\n+              className: \"calendar-item btn btn-sm btn-link text-start text-decoration-none p-0\",\n+              text: label,\n+            });\n+            itemBtn.addEventListener(\"click\", function (ev) {\n+              ev.preventDefault();\n+              ev.stopPropagation();\n+              location.hash = \"#form/\" + table + \"/\" + row.id;\n+            });\n+            dayEl.appendChild(itemBtn);\n+          });\n+          if (items.length > maxPerDay) {\n+            dayEl.appendChild(\n+              el(\"div\", {\n+                className: \"calendar-more small text-muted\",\n+                text: \"+\" + String(items.length - maxPerDay) + \" more\",\n+              })\n+            );\n+          }\n+          grid.appendChild(dayEl);\n+        });\n+      });\n+      gridHost.appendChild(grid);\n+    }\n+\n+    prevBtn.addEventListener(\"click\", function () {\n+      viewMonth -= 1;\n+      if (viewMonth < 0) {\n+        viewMonth = 11;\n+        viewYear -= 1;\n+      }\n+      paint();\n+    });\n+    nextBtn.addEventListener(\"click\", function () {\n+      viewMonth += 1;\n+      if (viewMonth > 11) {\n+        viewMonth = 0;\n+        viewYear += 1;\n+      }\n+      paint();\n+    });\n+\n     fetch(\"/api/tables/\" + encodeURIComponent(table) + \"?limit=200\")\n       .then(function (res) {\n         return res.json();\n       })\n       .then(function (rows) {\n-        (rows || [])\n-          .slice()\n-          .sort(function (a, b) {\n-            return String(a[dateCol] || \"\").localeCompare(String(b[dateCol] || \"\"));\n-          })\n-          .forEach(function (row) {\n-            list.appendChild(\n-              el(\"li\", { className: \"list-group-item d-flex justify-content-between\" }, [\n-                el(\"span\", { text: row[(col.title_column || \"title\")] || \"#\" + row.id }),\n-                el(\"span\", { className: \"text-muted small\", text: row[dateCol] || \"\" }),\n-              ])\n-            );\n-          });\n+        rowsCache = rows || [];\n+        paint();\n+      })\n+      .catch(function () {\n+        rowsCache = [];\n+        paint();\n+        gridHost.appendChild(\n+          el(\"p\", { className: \"text-muted small\", text: \"Could not load rows.\" })\n+        );\n       });\n   }\n \n",
+        "stats": {
+          "deletions": 16,
+          "files": [
+            {
+              "additions": 60,
+              "deletions": 0,
+              "path": "static/css/layout.css",
+              "status": "A"
+            },
+            {
+              "additions": 1,
+              "deletions": 0,
+              "path": "static/index.html",
+              "status": "M"
+            },
+            {
+              "additions": 175,
+              "deletions": 16,
+              "path": "static/js/layout.js",
+              "status": "M"
+            }
+          ],
+          "files_changed": 3,
+          "insertions": 236
+        },
+        "truncated": false
+      },
+      "features": [
+        "Month-grid calendar view with weekday headers",
+        "Previous and next month navigation",
+        "Displays entries on their corresponding dates",
+        "Shows up to three items per day with an overflow count",
+        "Clickable calendar items open the entry form",
+        "Supports configurable display titles and date fields",
+        "Handles entries with invalid or missing dates",
+        "Displays a loading failure message when calendar data cannot be fetched"
+      ],
+      "is_head": false,
+      "sha": "536e019723adb2380dbd4a302a50c059e10b9bcc",
+      "short_sha": "536e019",
+      "subject": "Add month-grid calendar widget",
+      "summary": "Replaces the calendar’s dated list with a six-week month-grid view starting on Monday. Users can move between months, see up to three entries per day, and open an entry’s form directly from the calendar."
+    },
+    {
+      "authored_at": "2026-09-05T21:33:36-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Add a `pyproject.toml` so the project can be installed with\n`python3 -m pip install -e .` and run through the `desktopper` entry\npoint.\n\nUpdate the README and operator guide to match the new workflow:\ninstall into the Python you already use, fetch Bootstrap once, and\nstart the server with `desktopper` or `python3 -m app.server` when the\ncommand is not on `PATH`.\n\nKeep `requirements.txt` as a thin editable-install wrapper so older\nworkflows still resolve the same runtime dependencies through the\npackage metadata.\n",
+        "patch": "diff --git a/README.md b/README.md\nindex 484b887..cb2db40 100644\n--- a/README.md\n+++ b/README.md\n@@ -57,18 +57,31 @@ Day-to-day runbooks live in [docs/OPERATOR-GUIDE.md](docs/OPERATOR-GUIDE.md).\n ### Install\n \n 1. Clone this repository.\n-2. Create a virtual environment: `python3 -m venv .venv`\n-3. Activate it: `source .venv/bin/activate`\n-4. Install packages: `pip install -r requirements.txt`\n-5. Fetch Bootstrap once: `python3 tools/fetch_bootstrap.py`\n+2. From the repo root, install into the Python you use on the command line (no project `.venv`):\n \n-If `static/css/bootstrap.min.css` is missing, `python3 -m app.server` prints a message and exits.\n+   ```bash\n+   python3 -m pip install -e .\n+   ```\n+\n+   Check that `which python3` and `which pip` (or `python3 -m pip`) are the same environment. If you use conda `(base)` but `which python3` shows Homebrew (`/opt/homebrew/...`), either put conda first on `PATH` or install with conda’s pip:\n+\n+   ```bash\n+   \"$HOME/miniconda3/bin/pip\" install -e .\n+   ```\n+\n+   Homebrew’s Python (PEP 668) often refuses `pip install` into itself. Prefer conda, or another env you manage — not a project `.venv` unless you want one.\n+\n+3. Fetch Bootstrap once: `python3 tools/fetch_bootstrap.py`\n+\n+`python3 -m pip install -r requirements.txt` is equivalent (it installs `-e .`).\n \n ### Run\n \n-1. Start the server: `python3 -m app.server`\n+1. Start the server: `desktopper`\n 2. Open the printed URL in Safari, for example `http://127.0.0.1:8000/`.\n \n+If `desktopper` is not on your `PATH`, run `python3 -m app.server` from the repo (same `python3` you installed into), or put that environment’s `bin` directory on `PATH` (for conda: `$HOME/miniconda3/bin`).\n+\n The process binds to `server.bind` in `conf.yaml`. It refuses `0.0.0.0`.\n \n On first start the process creates:\n@@ -194,16 +207,16 @@ Keep `.env` and `conf.yaml`. You may also delete `desktopper.jsonl` if you want\n \n ## Development\n \n-Prefer the project virtualenv:\n+With the package installed in the Python you use for tests:\n \n ```bash\n-.venv/bin/python -m unittest discover -s tests -v\n+python3 -m unittest discover -s tests -v\n ```\n \n Focused runs:\n \n ```bash\n-.venv/bin/python -m unittest tests.test_hooks tests.test_screens tests.test_slice7 tests.test_slice8 tests.test_final -v\n+python3 -m unittest tests.test_hooks tests.test_screens tests.test_slice7 tests.test_slice8 tests.test_final -v\n ```\n \n ## Project layout\n@@ -215,7 +228,8 @@ tools/                Bootstrap fetch and optional seed\n tests/                unittest suite\n .env.example          Secrets template (copied to appdir)\n config.yaml.example   Knobs template (copied to appdir as conf.yaml)\n-requirements.txt\n+pyproject.toml        Package metadata and `desktopper` CLI entry point\n+requirements.txt      Thin wrapper: `pip install -e .`\n LICENSE\n ```\n \ndiff --git a/docs/OPERATOR-GUIDE.md b/docs/OPERATOR-GUIDE.md\nindex 463a87c..b46b576 100644\n--- a/docs/OPERATOR-GUIDE.md\n+++ b/docs/OPERATOR-GUIDE.md\n@@ -17,9 +17,9 @@ The LLM never writes HTML, JavaScript, or SQL. The host validates schema diffs a\n \n ## Day-one checklist\n \n-1. From the repo, activate the virtualenv: `source .venv/bin/activate`. If `.venv` is missing, follow the [README](../README.md) install steps first.\n+1. From the repo, install once into the Python you use day to day: `python3 -m pip install -e .` (see the [README](../README.md) if needed).\n 2. Confirm Bootstrap assets exist (`static/css/bootstrap.min.css`). If missing, run `python3 tools/fetch_bootstrap.py`.\n-3. Start the server: `python3 -m app.server`.\n+3. Start the server: `desktopper` (or `python3 -m app.server` from the repo).\n 4. Open the printed URL in Safari (for example `http://127.0.0.1:8000/`).\n 5. Put an LLM key in `appdir/.env` if you use a cloud provider. Restart after edits.\n 6. Sign in on Home as the owner when you need user management or grant-aware views.\n@@ -57,20 +57,28 @@ Do not put API keys in `conf.yaml`. Do not commit live `.env` or `conf.yaml`. Th\n \n ### Start\n \n-From the repo, activate the project virtualenv, then start the server:\n+Install once into the Python you run (no project `.venv`), then start:\n \n ```bash\n-source .venv/bin/activate\n-python3 -m app.server\n+cd /path/to/desktopper\n+python3 -m pip install -e .\n+desktopper\n ```\n \n-Without activating, call the venv interpreter directly:\n+Confirm `which python3` matches the env you installed into. With conda `(base)`, Homebrew’s `/opt/homebrew/bin/python3` often shadows conda. Fix by putting `$HOME/miniconda3/bin` earlier on `PATH`, or install and run with conda’s binaries:\n \n ```bash\n-.venv/bin/python -m app.server\n+\"$HOME/miniconda3/bin/pip\" install -e .\n+\"$HOME/miniconda3/bin/desktopper\"\n ```\n \n-Do not use a bare system or conda `(base)` `python3` unless that environment has the packages from `requirements.txt`. A missing `flask` (or `yaml`) usually means the wrong interpreter.\n+If `desktopper` is not found but the package is installed, run:\n+\n+```bash\n+python3 -m app.server\n+```\n+\n+A missing `flask` or `yaml` means you installed into a different interpreter than the one you are running.\n \n On success the process prints the Home URL and keeps running. Startup also:\n \n@@ -247,8 +255,10 @@ Keep `.env` and `conf.yaml`. Optionally delete `desktopper.jsonl` and `ops_threa\n \n | Symptom | Likely cause | What to do |\n | --- | --- | --- |\n-| `ModuleNotFoundError: No module named 'flask'` (or `yaml`) | Wrong Python (system or conda base) | From the repo: `source .venv/bin/activate`, or run `.venv/bin/python -m app.server`. Install with `pip install -r requirements.txt` inside the venv if needed. |\n-| Process exits: Bootstrap CSS missing | Assets not fetched | With the venv active, run `python3 tools/fetch_bootstrap.py`. |\n+| `desktopper: command not found` | Not installed, or that env’s `bin` not on `PATH` | From the repo: `python3 -m pip install -e .`. Or run `python3 -m app.server`. With conda, try `$HOME/miniconda3/bin/desktopper`. |\n+| `ModuleNotFoundError: No module named 'flask'` (or `yaml`) | `python3` is not the env you installed into (often Homebrew vs conda) | Run `which python3`. Install with that interpreter’s pip, or use `$HOME/miniconda3/bin/pip install -e .` and that `desktopper`. |\n+| `externally-managed-environment` from pip | Homebrew Python (PEP 668) | Do not force `--break-system-packages`. Install into conda (or another managed env), not Homebrew’s Python. |\n+| Process exits: Bootstrap CSS missing | Assets not fetched | From the repo: `python3 tools/fetch_bootstrap.py`. |\n | Process exits: bind refused | `server.bind` is `0.0.0.0` | Set a loopback address in `conf.yaml`. |\n | Process exits: unknown LLM provider | Bad `llm.provider` | Use `xai` or `openai_compatible`. |\n | Ops returns LLM down / timeout | Network, key, model, or timeout | Check `.env` key, provider URL, and `timeout_seconds`. Restart after edits. |\n@@ -270,23 +280,26 @@ Keep `.env` and `conf.yaml`. Optionally delete `desktopper.jsonl` and `ops_threa\n ## Quick command reference\n \n ```bash\n-# Activate venv (from repo) — required so python3 has Flask and deps\n-source .venv/bin/activate\n+# From the repo — install once (no project .venv)\n+# Use the same Python you will run with (check: which python3)\n+python3 -m pip install -e .\n \n-# Or skip activate and call the venv interpreter:\n-# .venv/bin/python -m app.server\n+# If conda (base) but python3 is Homebrew, use conda explicitly:\n+# \"$HOME/miniconda3/bin/pip\" install -e .\n \n # One-time Bootstrap fetch\n python3 tools/fetch_bootstrap.py\n \n # Run\n-python3 -m app.server\n+desktopper\n+# or: python3 -m app.server\n+# or: \"$HOME/miniconda3/bin/desktopper\"\n \n # Optional sample schema (server must be running)\n python3 tools/seed_schema.py\n \n # Override data directory for a throwaway instance\n-DESKTOPPER_APPDIR=/tmp/desktopper-op python3 -m app.server\n+DESKTOPPER_APPDIR=/tmp/desktopper-op desktopper\n ```\n \n ## Related files\ndiff --git a/pyproject.toml b/pyproject.toml\nnew file mode 100644\nindex 0000000..16dee85\n--- /dev/null\n+++ b/pyproject.toml\n@@ -0,0 +1,21 @@\n+[build-system]\n+requires = [\"setuptools>=61\"]\n+build-backend = \"setuptools.build_meta\"\n+\n+[project]\n+name = \"desktopper\"\n+version = \"0.1.0\"\n+description = \"Local macOS app that builds information models from ordinary language\"\n+readme = \"README.md\"\n+requires-python = \">=3.11\"\n+license = { text = \"MIT\" }\n+dependencies = [\n+  \"Flask==3.1.2\",\n+  \"PyYAML==6.0.2\",\n+]\n+\n+[project.scripts]\n+desktopper = \"app.server:main\"\n+\n+[tool.setuptools.packages.find]\n+include = [\"app*\"]\ndiff --git a/requirements.txt b/requirements.txt\nindex 036a18a..c5d022a 100644\n--- a/requirements.txt\n+++ b/requirements.txt\n@@ -1,2 +1,6 @@\n-Flask==3.1.2\n-PyYAML==6.0.2\n+# Editable install from the repo root into your current Python:\n+#   python3 -m pip install -e .\n+#\n+# That installs runtime deps from pyproject.toml and the `desktopper` CLI.\n+# No project .venv is required. A virtualenv is optional if you want isolation.\n+-e .\n",
+        "stats": {
+          "deletions": 28,
+          "files": [
+            {
+              "additions": 24,
+              "deletions": 10,
+              "path": "README.md",
+              "status": "M"
+            },
+            {
+              "additions": 29,
+              "deletions": 16,
+              "path": "docs/OPERATOR-GUIDE.md",
+              "status": "M"
+            },
+            {
+              "additions": 21,
+              "deletions": 0,
+              "path": "pyproject.toml",
+              "status": "A"
+            },
+            {
+              "additions": 6,
+              "deletions": 2,
+              "path": "requirements.txt",
+              "status": "M"
+            }
+          ],
+          "files_changed": 4,
+          "insertions": 80
+        },
+        "truncated": false
+      },
+      "features": [
+        "Editable package installation with pinned Flask and PyYAML dependencies",
+        "`desktopper` command-line launcher for starting the server",
+        "Updated installation, startup, testing, and troubleshooting guidance",
+        "Requirements file now delegates to the package installation"
+      ],
+      "is_head": false,
+      "sha": "941b53939eb2448349f47c7d1b9c49bdb0e0860c",
+      "short_sha": "941b539",
+      "subject": "Make package installable",
+      "summary": "The project can now be installed as an editable Python package, including its runtime dependencies, and provides a `desktopper` command to start the server. Documentation and the requirements file were updated to use the selected Python environment instead of requiring a project virtual environment."
+    },
+    {
+      "authored_at": "2026-09-05T20:44:01-04:00",
+      "detail": {
+        "author_email": "rdegraci@gmail.com",
+        "author_name": "Rodney Degracia",
+        "body": "Operators need disable vs delete guidance and a how-to that\nmatches the Ops Business rules panel.\n",
+        "patch": "diff --git a/docs/OPERATOR-GUIDE.md b/docs/OPERATOR-GUIDE.md\nindex c2d074d..463a87c 100644\n--- a/docs/OPERATOR-GUIDE.md\n+++ b/docs/OPERATOR-GUIDE.md\n@@ -17,12 +17,13 @@ The LLM never writes HTML, JavaScript, or SQL. The host validates schema diffs a\n \n ## Day-one checklist\n \n-1. Confirm Bootstrap assets exist (`static/css/bootstrap.min.css`). If missing, run `python3 tools/fetch_bootstrap.py`.\n-2. Start the server: `python3 -m app.server`.\n-3. Open the printed URL in Safari (for example `http://127.0.0.1:8000/`).\n-4. Put an LLM key in `appdir/.env` if you use a cloud provider. Restart after edits.\n-5. Sign in on Home as the owner when you need user management or grant-aware views.\n-6. Open Ops and type `help` to see the built-in Ops help.\n+1. From the repo, activate the virtualenv: `source .venv/bin/activate`. If `.venv` is missing, follow the [README](../README.md) install steps first.\n+2. Confirm Bootstrap assets exist (`static/css/bootstrap.min.css`). If missing, run `python3 tools/fetch_bootstrap.py`.\n+3. Start the server: `python3 -m app.server`.\n+4. Open the printed URL in Safari (for example `http://127.0.0.1:8000/`).\n+5. Put an LLM key in `appdir/.env` if you use a cloud provider. Restart after edits.\n+6. Sign in on Home as the owner when you need user management or grant-aware views.\n+7. Open Ops and type `help` to see the built-in Ops help.\n \n ## Appdir and files\n \n@@ -56,12 +57,21 @@ Do not put API keys in `conf.yaml`. Do not commit live `.env` or `conf.yaml`. Th\n \n ### Start\n \n-From the repo, with the virtualenv active:\n+From the repo, activate the project virtualenv, then start the server:\n \n ```bash\n+source .venv/bin/activate\n python3 -m app.server\n ```\n \n+Without activating, call the venv interpreter directly:\n+\n+```bash\n+.venv/bin/python -m app.server\n+```\n+\n+Do not use a bare system or conda `(base)` `python3` unless that environment has the packages from `requirements.txt`. A missing `flask` (or `yaml`) usually means the wrong interpreter.\n+\n On success the process prints the Home URL and keeps running. Startup also:\n \n 1. Loads config and creates the appdir if needed.\n@@ -163,12 +173,13 @@ The conversation persists in `ops_thread.jsonl` across reloads. Use **Clear thre\n | --- | --- |\n | Packs | Load a shipped or local markdown prompt pack and run ordered Ops intents step by step. Propose still requires Apply; the thread is not cleared on load. |\n | Reminders | Create, edit, enable, or disable wall-clock reminders. View scheduler status. |\n+| Business rules | List data nags; enable, disable, or delete rules. Create and edit `when` / `then` in the conversation. |\n | Hooks | Edit Python hook code; enable, disable, or delete hooks. |\n | Users | Create app login accounts (owner session required). |\n | Sync export / import | Move change events between replicas. |\n | Logs | Read and copy recent server events. |\n \n-Most schema still goes through the conversation. Formulas and rules have no separate Ops editor.\n+Most schema still goes through the conversation. Formulas have no separate Ops editor. Rules are authored via intent; the Business rules panel manages enable, disable, and delete.\n \n ## Hooks\n \n@@ -236,7 +247,8 @@ Keep `.env` and `conf.yaml`. Optionally delete `desktopper.jsonl` and `ops_threa\n \n | Symptom | Likely cause | What to do |\n | --- | --- | --- |\n-| Process exits: Bootstrap CSS missing | Assets not fetched | Run `python3 tools/fetch_bootstrap.py`. |\n+| `ModuleNotFoundError: No module named 'flask'` (or `yaml`) | Wrong Python (system or conda base) | From the repo: `source .venv/bin/activate`, or run `.venv/bin/python -m app.server`. Install with `pip install -r requirements.txt` inside the venv if needed. |\n+| Process exits: Bootstrap CSS missing | Assets not fetched | With the venv active, run `python3 tools/fetch_bootstrap.py`. |\n | Process exits: bind refused | `server.bind` is `0.0.0.0` | Set a loopback address in `conf.yaml`. |\n | Process exits: unknown LLM provider | Bad `llm.provider` | Use `xai` or `openai_compatible`. |\n | Ops returns LLM down / timeout | Network, key, model, or timeout | Check `.env` key, provider URL, and `timeout_seconds`. Restart after edits. |\n@@ -258,9 +270,12 @@ Keep `.env` and `conf.yaml`. Optionally delete `desktopper.jsonl` and `ops_threa\n ## Quick command reference\n \n ```bash\n-# Activate venv (from repo)\n+# Activate venv (from repo) — required so python3 has Flask and deps\n source .venv/bin/activate\n \n+# Or skip activate and call the venv interpreter:\n+# .venv/bin/python -m app.server\n+\n # One-time Bootstrap fetch\n python3 tools/fetch_bootstrap.py\n \ndiff --git a/docs/RULES-HOW-TO.md b/docs/RULES-HOW-TO.md\nnew file mode 100644\nindex 0000000..fd1e02c\n--- /dev/null\n+++ b/docs/RULES-HOW-TO.md\n@@ -0,0 +1,284 @@\n+# Rules how-to\n+\n+This guide explains **business rules** in Desktopper: what they do, how to\n+add them in Ops, and how they differ from reminders, layouts, and hooks.\n+\n+For day-to-day Ops use, see the [Operator guide](OPERATOR-GUIDE.md).\n+\n+## What a rule is\n+\n+A rule is a small automation in `schema.json`. It watches rows on one table.\n+When its condition matches, it runs one or more actions.\n+\n+Rules do **not** draw UI widgets. They change data or create notices. Layouts\n+(`add_layouts`) place widgets such as metrics, kanban, and notices on a screen.\n+\n+| Piece | Role |\n+| --- | --- |\n+| `id` | Snake_case name (for example `nag_delivered`) |\n+| `enabled` | When `false`, the host skips the rule |\n+| `trigger` | `on_write` or `schedule` |\n+| `table` | Primary table the rule binds to |\n+| `when` | Boolean expression tree (must match the row) |\n+| `then` | Non-empty list of actions |\n+\n+## Rules vs reminders vs hooks\n+\n+| Feature | When to use |\n+| --- | --- |\n+| **Rule** | “When row data looks like X, notify me or update a column” |\n+| **Reminder** | Wall-clock nag (once, daily, weekly, interval) with no row `when` tree |\n+| **Hook** | Custom Python on create/update/delete or at startup |\n+\n+Prefer a rule for data nags. Prefer a reminder for “ping me at 9am.” Prefer a\n+hook only when the four rule actions are not enough.\n+\n+## How to add a rule\n+\n+1. Open **Ops** (`/ops`).\n+2. Describe the nag in ordinary language. Example: “When a story stays in\n+   delivered, notify me to accept or reject it.”\n+3. Let Ops **propose**, then **apply** (or apply if the host auto-applies a\n+   safe diff).\n+4. Confirm notices on **Home** (navbar badge and notices widget, if present).\n+\n+Add tables and columns first if the rule needs them. Empty-schema tip: create\n+list/form screens in one intent, then add rules in a later intent.\n+\n+Create and change `when` / `then` through the Ops conversation (`add_rules`).\n+There is no visual rule builder.\n+\n+## Manage on Ops (Business rules panel)\n+\n+On Ops, open **Business rules** (after Reminders, before Hooks):\n+\n+| Action | How |\n+| --- | --- |\n+| List | Id, table, trigger, short when/then summary |\n+| Enable / Disable | Toggle without rewriting the expression |\n+| Delete | Confirm, then hard-remove from `schema.rules` |\n+| Inspect | **JSON** expands read-only `when` / `then` |\n+\n+The panel refreshes after a successful Ops apply. Create still happens in the\n+conversation above.\n+\n+## Triggers\n+\n+### `on_write`\n+\n+Runs after a normal **create or update** of a row on that table (CRUD path).\n+It does not run on delete.\n+\n+```json\n+\"trigger\": { \"kind\": \"on_write\" }\n+```\n+\n+Omit `every_seconds`.\n+\n+The host evaluates `when` on the row **after** the write. It is not a\n+transition detector: any matching update can fire the rule again (subject to\n+notice dedupe for `notify`).\n+\n+### `schedule`\n+\n+The built-in job `run_rules` runs on an interval (default every 60 seconds)\n+while the server is up. On each run it evaluates every enabled rule with\n+`trigger.kind` `schedule`, scans that rule’s table (up to 200 rows per rule\n+per tick), and runs actions for matching rows.\n+\n+```json\n+\"trigger\": { \"kind\": \"schedule\", \"every_seconds\": 3600 }\n+```\n+\n+`every_seconds` is part of the Ops schema contract (integer; prompt asks for\n+minimum 60). The schedule **job** cadence is what drives evaluation today;\n+repeat `notify` spam is limited by notice dedupe (below), not by per-rule\n+throttling on `every_seconds`.\n+\n+Scheduled rules only run while the server process is up. If the process stops,\n+work waits until the next job fire after restart.\n+\n+## Actions (`then`)\n+\n+Allowed kinds:\n+\n+| Kind | Effect |\n+| --- | --- |\n+| `notify` | Insert a notice (title, body). Preferred for nags |\n+| `set_column` | Update one column on the matched row |\n+| `create_row` | Insert a row into another table |\n+| `email` | Send email when SMTP is configured; otherwise may fall back to a notice |\n+\n+You may put several actions in one rule’s `then` list. They run in order.\n+\n+**Notify dedupe:** the host skips a new notice when an **unread** notice already\n+exists for the same rule id and row id within the last **24 hours**. That\n+limits spam from schedule ticks and repeat on_write matches.\n+\n+**Email:** set `SMTP_HOST` (and usually `SMTP_PORT`, `SMTP_USER`,\n+`SMTP_PASSWORD`) in the environment. Use `email` only when the user asked for\n+email. Prefer `notify` for in-app nags.\n+\n+## Expression `when`\n+\n+`when` is the same expression language as formulas. It must evaluate to a\n+boolean for the current row.\n+\n+Common ops: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `and`, `or`, `not`, `col`,\n+`lit`, `now`.\n+\n+Example: state equals delivered:\n+\n+```json\n+\"when\": {\n+  \"op\": \"eq\",\n+  \"left\": { \"op\": \"col\", \"column\": \"state\" },\n+  \"right\": { \"op\": \"lit\", \"value\": \"delivered\" }\n+}\n+```\n+\n+## Examples\n+\n+### Schedule nag (overdue task)\n+\n+Ops intent: “Every hour, notify me about open tasks past due.”\n+\n+```json\n+{\n+  \"id\": \"nag_overdue\",\n+  \"enabled\": true,\n+  \"trigger\": { \"kind\": \"schedule\", \"every_seconds\": 3600 },\n+  \"table\": \"tasks\",\n+  \"when\": {\n+    \"op\": \"and\",\n+    \"args\": [\n+      {\n+        \"op\": \"lt\",\n+        \"left\": { \"op\": \"col\", \"column\": \"due_on\" },\n+        \"right\": { \"op\": \"now\" }\n+      },\n+      {\n+        \"op\": \"neq\",\n+        \"left\": { \"op\": \"col\", \"column\": \"status\" },\n+        \"right\": { \"op\": \"lit\", \"value\": \"done\" }\n+      }\n+    ]\n+  },\n+  \"then\": [\n+    {\n+      \"kind\": \"notify\",\n+      \"title\": \"Overdue task\",\n+      \"body\": \"A task is past due.\"\n+    }\n+  ]\n+}\n+```\n+\n+### On-write notify (Tracker story)\n+\n+Ops intent: “When a story moves to delivered, notify me.”\n+\n+```json\n+{\n+  \"id\": \"nag_on_delivered\",\n+  \"enabled\": true,\n+  \"trigger\": { \"kind\": \"on_write\" },\n+  \"table\": \"stories\",\n+  \"when\": {\n+    \"op\": \"eq\",\n+    \"left\": { \"op\": \"col\", \"column\": \"state\" },\n+    \"right\": { \"op\": \"lit\", \"value\": \"delivered\" }\n+  },\n+  \"then\": [\n+    {\n+      \"kind\": \"notify\",\n+      \"title\": \"Story delivered\",\n+      \"body\": \"Accept or reject this story.\"\n+    }\n+  ]\n+}\n+```\n+\n+### Several actions in one rule\n+\n+Put related steps in one `then` list:\n+\n+```json\n+\"then\": [\n+  {\n+    \"kind\": \"set_column\",\n+    \"column\": \"status\",\n+    \"value\": { \"op\": \"lit\", \"value\": \"overdue\" }\n+  },\n+  {\n+    \"kind\": \"notify\",\n+    \"title\": \"Marked overdue\",\n+    \"body\": \"Status set to overdue.\"\n+  }\n+]\n+```\n+\n+## Can rules chain?\n+\n+**No workflow chain.** Rules do not call other rules. There is no “next rule”\n+field.\n+\n+| Pattern | Supported? |\n+| --- | --- |\n+| Several actions in one `then` | Yes |\n+| Rule A fires Rule B | No |\n+| Explicit dependency graph | No |\n+\n+`set_column` and `create_row` from a rule use a direct SQL path. They do **not**\n+re-enter the normal CRUD path, so they do not re-trigger `on_write` rules.\n+Keep related steps in one rule.\n+\n+## Disable or delete a rule\n+\n+**Disable** (temporary mute): ask Ops to stop the nag, or click **Disable** on\n+the Business rules panel. The host sets `enabled` to `false` (`disable_rules`\n+or `PATCH /api/rules/<id>` with `{ \"enabled\": false }`). The rule stays in\n+schema.\n+\n+Example intent: “Disable the nag_delivered rule.”\n+\n+**Enable** again: click **Enable** on the panel (`PATCH` with\n+`{ \"enabled\": true }`). There is no separate `enable_rules` intent key; ask\n+Ops in plain language or use the panel.\n+\n+**Delete** (remove from schema): ask Ops to delete or remove the rule, or click\n+**Delete** on the panel (confirm). The host uses `remove_rules` or\n+`DELETE /api/rules/<id>`. Past notices that stored the rule id stay.\n+\n+Prefer disable when you may turn the nag back on. Prefer delete when the rule\n+is wrong or no longer wanted.\n+\n+## Notices and the Home UI\n+\n+`notify` writes to host notices. Unread notices show on the Home navbar badge.\n+A layout may include a `notices` widget so the list appears on a dashboard.\n+\n+A rule never adds a kanban, metric, or other widget. Use Ops layouts for that.\n+\n+## Limits and pitfalls\n+\n+- Rules need a valid `table` that already exists in schema.\n+- Schedule evaluation follows the `run_rules` job (default every 60 seconds),\n+  not a separate per-rule timer.\n+- Scheduled scan: up to 200 rows per rule per `run_rules` tick.\n+- Server must be running for schedule triggers and the `run_rules` job.\n+- Do not expect rule actions to cascade into other `on_write` rules.\n+- Prefer `notify` over `email` unless SMTP is configured and requested.\n+- Author `when` / `then` via Ops intent; use the Business rules panel to manage\n+  enable, disable, and delete.\n+\n+## Related files\n+\n+| Path | Role |\n+| --- | --- |\n+| `app/rules.py` | Validate, run, list/toggle/delete helpers, apply rule diffs |\n+| `app/system_prompt.py` | Ops LLM contract for `add_rules` / `disable_rules` / `remove_rules` |\n+| `app/jobs.py` | Built-in `run_rules` schedule job |\n+| `static/ops.html` / `static/js/ops.js` | Business rules panel |\n+| `docs/OPERATOR-GUIDE.md` | Ops, reminders, notices overview |\n+| `docs/cache/THIN-RULES.md` | Design note (panel now shipped) |\n",
+        "stats": {
+          "deletions": 10,
+          "files": [
+            {
+              "additions": 25,
+              "deletions": 10,
+              "path": "docs/OPERATOR-GUIDE.md",
+              "status": "M"
+            },
+            {
+              "additions": 284,
+              "deletions": 0,
+              "path": "docs/RULES-HOW-TO.md",
+              "status": "A"
+            }
+          ],
+          "files_changed": 2,
+          "insertions": 309
+        },
+        "truncated": false
+      },
+      "features": [
+        "Business rules how-to guide",
+        "Ops instructions for creating rules through conversation",
+        "Business rules panel usage for listing, inspecting, enabling, disabling, and deleting rules",
+        "Documentation of rule triggers, actions, expressions, and notice deduplication",
+        "Guidance distinguishing rules from reminders and hooks",
+        "Virtual-environment startup and interpreter troubleshooting guidance"
+      ],
+      "is_head": false,
+      "sha": "c5f26d580c09745511977b4dcf4f5444f302df84",
+      "short_sha": "c5f26d5",
+      "subject": "Document rules panel manage",
+      "summary": "Adds a comprehensive guide for creating and managing business rules, including their triggers, actions, expressions, notices, and limitations. Updates the operator guide to describe the Business rules panel and clarifies virtual-environment setup and troubleshooting."
+    }
+  ],
+  "updated_at": "2026-09-29T18:16:59.171462+00:00",
+  "working_tree": {
+    "clean": true,
+    "staged": [],
+    "summary": "",
+    "unstaged": [],
+    "untracked": []
+  }
+}
