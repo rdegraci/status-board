@@ -5,11 +5,44 @@
   "branch": "main",
   "commit_count": 6,
   "files_touched_total": 27,
-  "future_steps": [],
+  "future_steps": [
+    {
+      "text": "Add resumable workflow execution that can restart safely from the latest checkpoint after interruption, without duplicating completed units or corrupting artifacts."
+    },
+    {
+      "text": "Introduce isolated command execution with workspace boundaries, configurable resource limits, network controls, and cancellation for generated implementation and verification commands."
+    },
+    {
+      "text": "Provide explicit review and approval gates for generated specifications, designs, implementation plans, and code changes before execution begins."
+    },
+    {
+      "text": "Add artifact diffs and checkpoint rollback so operators can inspect exactly what a unit changed and restore the project after an unsuccessful repair or integration run."
+    },
+    {
+      "text": "Connect full-project integration failures to the units and artifacts most likely responsible, then offer a bounded repair-and-reverify flow rather than only reporting the failure."
+    },
+    {
+      "text": "Add preflight validation for configured models, required tools, verification commands, permissions, and writable workspace state before starting a run."
+    },
+    {
+      "text": "Redact secrets from command output, reports, advisor context, and persisted run history while allowing explicit environment-variable allowlisting for project commands."
+    }
+  ],
   "head_sha": "c9baa73b48f86449e69db04fac41729bf25cbe5b",
   "head_story": {
-    "features": [],
-    "text": ""
+    "features": [
+      "Generate project specifications and system designs from an initial request",
+      "Apply either a standard-library HTTP or FastAPI starter application",
+      "Plan and execute bounded implementation units one at a time",
+      "Retry failed units with verification-guided repair context",
+      "Configure verification commands, optional checks, timeouts, and retry limits",
+      "View unit status, verification results, run history, and summary reports",
+      "Run full-project integration checks after all units are complete",
+      "Inspect project artifacts and checkpoints from the command line",
+      "Ask a read-only advisor for workflow guidance based on project state",
+      "Bootstrap user-scoped YAML configuration and environment settings"
+    ],
+    "text": "Greenfield now guides a project from an initial idea through specifications, a selectable starter application, bounded implementation work, verification, and full-project integration checks. Retryable failures can trigger a repair attempt with the previous verification details preserved for inspection. Operators can configure models and checks, review run history and artifacts, and ask a read-only advisor for grounded next steps."
   },
   "range_label": "94a5efe..c9baa73",
   "repo": {
@@ -61,12 +94,21 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Guided first-run setup and quick-start workflow",
+        "Documented user-scoped configuration and environment overrides",
+        "Documented spec, design, scaffold, planning, and implementation workflow",
+        "Documented verification, retry, repair, and integration operations",
+        "Documented feature-evolution workflow for existing projects",
+        "Documented checkpoints, inspection, status, and advisor usage",
+        "Documented stdlib and FastAPI scaffold selection",
+        "Added MIT license"
+      ],
       "is_head": true,
       "sha": "c9baa73b48f86449e69db04fac41729bf25cbe5b",
       "short_sha": "c9baa73",
       "subject": "Document Greenfield setup and operations",
-      "summary": ""
+      "summary": "Adds comprehensive setup and operations documentation for Greenfield, covering installation, configuration, project creation, specification and scaffold workflows, implementation execution, verification, recovery, and feature evolution. Also adds a project license and clarifies available commands, artifacts, scaffold options, and troubleshooting guidance."
     },
     {
       "authored_at": "2026-08-26T23:45:45-04:00",
@@ -90,12 +132,18 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Documented Phases 0–5 capabilities",
+        "Added configuration and environment-variable guidance",
+        "Documented stdlib and FastAPI scaffold templates",
+        "Added work listing, inspection, integration, and advisor commands",
+        "Documented configurable verification and run-history locations"
+      ],
       "is_head": false,
       "sha": "659d78cf746b540c030742b05d27c6415db97e41",
       "short_sha": "659d78c",
       "subject": "Update README for Phases 2–5 CLI and configuration.",
-      "summary": ""
+      "summary": "Updates the README to document the implemented Phases 0–5 workflow, including LLM-assisted planning and code generation, repair, verification, run history, and advisor guidance. It also explains configuration bootstrapping, scaffold template selection, and the expanded CLI commands for listing work, inspecting artifacts, integrating, and verifying projects."
     },
     {
       "authored_at": "2026-08-26T23:08:53-04:00",
@@ -185,12 +233,20 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Automatic config.yaml setup with environment-variable overrides",
+        "Configurable verification commands, optional checks, retry limits, context, paths, and scaffold template",
+        "Integration verification gated on all implementation units being complete",
+        "Persisted reports for successful integration verification",
+        "CLI inspection of project state, specifications, implementation units, and verification artifacts",
+        "Read-only advisor answers grounded in current project artifacts and source previews",
+        "Advisor responses can recommend concrete next-step CLI commands"
+      ],
       "is_head": false,
       "sha": "f7c2d8d19fc23440fc687b24df914d3ef0d044c1",
       "short_sha": "f7c2d8d",
       "subject": "Bootstrap config.yaml and add integration plus advisor commands.",
-      "summary": ""
+      "summary": "Bootstraps a structured runtime configuration from the example file, with environment variables still available as overrides. Adds project-wide integration verification, artifact inspection, and a read-only advisor that provides grounded next-step guidance from project state and specifications."
     },
     {
       "authored_at": "2026-08-26T22:36:49-04:00",
@@ -244,12 +300,21 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Configurable primary verification commands",
+        "Optional Ruff, formatting, and mypy checks",
+        "Graceful skipping of unavailable optional tools",
+        "Persisted verification run history",
+        "Persisted operator-facing summary reports",
+        "`work list` view of implementation status and verification results",
+        "Latest run and report locations shown in status output",
+        "Run records include work-run context and written-file details"
+      ],
       "is_head": false,
       "sha": "fb69a623fba9a41d0e574887479c9247c3a61379",
       "short_sha": "fb69a62",
       "subject": "Add verification config, run history, and work list.",
-      "summary": ""
+      "summary": "Verification can now run a configurable set of primary commands plus optional checks such as Ruff, Black, and mypy, skipping optional tools that are unavailable. Each verification produces run history and a summary report, while the CLI exposes implementation-unit status, retry information, and the latest verification artifacts through the work list and status views."
     },
     {
       "authored_at": "2026-08-26T21:57:47-04:00",
@@ -297,12 +362,19 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "FastAPI scaffold with /health endpoint",
+        "Standard-library scaffold remains the default",
+        "Template selection via system design field",
+        "Environment variable override for template selection",
+        "Automatic dependency installation before scaffold verification",
+        "CLI reports the applied template"
+      ],
       "is_head": false,
       "sha": "61cc5e75256afbf13d89385e7ace1e8359427ccc",
       "short_sha": "61cc5e7",
       "subject": "Add FastAPI scaffold template alongside stdlib default.",
-      "summary": ""
+      "summary": "Scaffolding now supports both the existing standard-library HTTP app and a FastAPI app. The template defaults to the standard-library version, while users can select FastAPI through the system design or an environment override; the selected template is reported and automatically verified."
     },
     {
       "authored_at": "2026-08-26T21:23:54-04:00",
@@ -344,15 +416,20 @@
         },
         "truncated": false
       },
-      "features": [],
+      "features": [
+        "Verification-driven repair prompts for retryable failures",
+        "Repair attempts constrained to the unit’s target files and required tests",
+        "Persistent YAML repair traces for each attempt",
+        "User-visible repair attempt status output"
+      ],
       "is_head": false,
       "sha": "c34b53baae0b1f9e24cedd43387316df2ae956dd",
       "short_sha": "c34b53b",
       "subject": "Add repair loop for retryable verification failures.",
-      "summary": ""
+      "summary": "Retryable verification failures now trigger a focused repair attempt that gives code generation the latest failure details and guidance. Each repair attempt is recorded with its verification report, attempt number, and repair context for inspection."
     }
   ],
-  "updated_at": "2026-09-29T18:17:30.128069+00:00",
+  "updated_at": "2026-09-29T18:25:40.435497+00:00",
   "working_tree": {
     "clean": true,
     "staged": [],
